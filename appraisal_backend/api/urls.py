@@ -6,6 +6,7 @@ from .views.hod import HODReviewAPI
 from .views.principal import PrincipalApproveAPI
 from .views.scoring_api import ScoringAPI
 from .views.workflow_api import WorkflowAPI
+from api.views.auth import RegisterAPI, LoginAPI
 #from .views.pdf_api import PDFGenerateAPI
 
 urlpatterns = [
@@ -24,4 +25,6 @@ urlpatterns = [
     #path("pdf/generate/", PDFGenerateAPI.as_view()),
 
     path('register/', RegisterAPI.as_view()),
+
+    path('login/', LoginAPI.as_view()),
 ]

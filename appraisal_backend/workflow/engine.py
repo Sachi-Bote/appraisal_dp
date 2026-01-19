@@ -17,23 +17,25 @@ class WorkflowEngine:
 
 
 ROLE_PERMISSIONS = {
-    "faculty": ["submit", "send_to_hod"],
-    "hod": ["hod_approve", "hod_reject"],
-    "principal": ["principal_review", "principal_approve", "principal_reject"]
+    "faculty": ["submit", "resubmit"],
+    "hod": ["submit", "resubmit", "hod_approve", "hod_reject"],
+    "principal": ["principal_approve", "principal_reject"]
 }
 
 
 
 ACTIONS = {
+    # SUBMISSION
     "submit": (States.DRAFT, States.SUBMITTED),
-    "send_to_hod": (States.SUBMITTED, States.HOD_REVIEW),
+    "resubmit": (States.DRAFT, States.SUBMITTED),
 
-    "hod_approve": (States.HOD_REVIEW, States.HOD_APPROVED),
-    "hod_reject": (States.HOD_REVIEW, States.DRAFT),
+    # HOD REVIEW
+    "hod_approve": (States.SUBMITTED, States.HOD_APPROVED),
+    "hod_reject": (States.SUBMITTED, States.DRAFT),
 
-    "principal_review": (States.HOD_APPROVED, States.PRINCIPAL_REVIEW),
-    "principal_approve": (States.PRINCIPAL_REVIEW, States.PRINCIPAL_APPROVED),
-    "principal_reject": (States.PRINCIPAL_REVIEW, States.DRAFT)
+    # PRINCIPAL REVIEW
+    "principal_approve": (States.HOD_APPROVED, States.PRINCIPAL_APPROVED),
+    "principal_reject": (States.HOD_APPROVED, States.DRAFT),
 }
 
 
@@ -45,16 +47,25 @@ def is_action_allowed(role, action):
 def perform_action(role, action, current_state):
     # 1. Role permission check
     if not is_action_allowed(role, action):
-        raise PermissionError(f"Role '{role}' cannot perform '{action}'")
+        raise PermissionError(
+            f"Role '{role}' cannot perform '{action}'"
+        )
+
+    if action not in ACTIONS:
+        raise ValueError("Invalid action")
 
     expected_current, new_state = ACTIONS[action]
 
-    # 2. If action expects a specific state
-    if expected_current != "*" and current_state != expected_current:
-        raise ValueError(f"Action '{action}' not allowed from '{current_state}'")
+    # 2. State check
+    if current_state != expected_current:
+        raise ValueError(
+            f"Action '{action}' not allowed from state '{current_state}'"
+        )
 
-    # 3. Validate transition
+    # 3. Transition validation
     if not can_transition(current_state, new_state):
-        raise ValueError(f"Invalid transition: {current_state} → {new_state}")
+        raise ValueError(
+            f"Invalid transition: {current_state} → {new_state}"
+        )
 
     return new_state
