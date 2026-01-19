@@ -1,0 +1,60 @@
+
+from .states import States, VALID_TRANSITIONS
+
+def can_transition(current_state, new_state):
+    return new_state in VALID_TRANSITIONS.get(current_state, [])
+
+
+class WorkflowEngine:
+    def __init__(self, initial_state):
+        self.state = initial_state
+
+    def transition(self, new_state):
+        if not can_transition(self.state, new_state):
+            raise ValueError(f"Invalid transition: {self.state} → {new_state}")
+        self.state = new_state
+        return self.state
+
+
+ROLE_PERMISSIONS = {
+    "faculty": ["submit", "send_to_hod"],
+    "hod": ["hod_approve", "hod_reject"],
+    "principal": ["principal_review", "principal_approve", "principal_reject"]
+}
+
+
+
+ACTIONS = {
+    "submit": (States.DRAFT, States.SUBMITTED),
+    "send_to_hod": (States.SUBMITTED, States.HOD_REVIEW),
+
+    "hod_approve": (States.HOD_REVIEW, States.HOD_APPROVED),
+    "hod_reject": (States.HOD_REVIEW, States.DRAFT),
+
+    "principal_review": (States.HOD_APPROVED, States.PRINCIPAL_REVIEW),
+    "principal_approve": (States.PRINCIPAL_REVIEW, States.PRINCIPAL_APPROVED),
+    "principal_reject": (States.PRINCIPAL_REVIEW, States.DRAFT)
+}
+
+
+
+def is_action_allowed(role, action):
+    return action in ROLE_PERMISSIONS.get(role, [])
+
+
+def perform_action(role, action, current_state):
+    # 1. Role permission check
+    if not is_action_allowed(role, action):
+        raise PermissionError(f"Role '{role}' cannot perform '{action}'")
+
+    expected_current, new_state = ACTIONS[action]
+
+    # 2. If action expects a specific state
+    if expected_current != "*" and current_state != expected_current:
+        raise ValueError(f"Action '{action}' not allowed from '{current_state}'")
+
+    # 3. Validate transition
+    if not can_transition(current_state, new_state):
+        raise ValueError(f"Invalid transition: {current_state} → {new_state}")
+
+    return new_state
