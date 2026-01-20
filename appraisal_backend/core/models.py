@@ -1,33 +1,55 @@
 from django.db import models
 from django.utils import timezone
 from django.contrib.auth.hashers import make_password, check_password
+from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, BaseUserManager
 
 
-class User(models.Model):
+
+class UserManager(BaseUserManager):
+    def create_user(self, username, password=None, role="FACULTY"):
+        if not username:
+            raise ValueError("Username is required")
+
+        user = self.model(username=username, role=role)
+        user.set_password(password)
+        user.save(using=self._db)
+        return user
+
+    def create_superuser(self, username, password):
+        user = self.create_user(username, password, role="PRINCIPAL")
+        user.is_staff = True
+        user.is_superuser = True
+        user.save(using=self._db)
+        return user
+
+
+class User(AbstractBaseUser, PermissionsMixin):
     ROLE_CHOICES = (
-        ('FACULTY', 'Faculty'),
-        ('HOD', 'HOD'),
-        ('PRINCIPAL', 'Principal'),
+        ("FACULTY", "Faculty"),
+        ("HOD", "HOD"),
+        ("PRINCIPAL", "Principal"),
     )
 
     user_id = models.AutoField(primary_key=True)
     username = models.CharField(max_length=150, unique=True)
-    password = models.TextField()
     role = models.CharField(max_length=20, choices=ROLE_CHOICES)
+
     is_active = models.BooleanField(default=True)
+    is_staff = models.BooleanField(default=False)
+
     created_at = models.DateTimeField(default=timezone.now)
 
+    objects = UserManager()
+
+    USERNAME_FIELD = "username"
+    REQUIRED_FIELDS = []
+
     class Meta:
-        db_table = 'users'
-
-    def set_password(self, raw_password):
-        self.password = make_password(raw_password)
-
-    def check_password(self, raw_password):
-        return check_password(raw_password, self.password)
+        db_table = "users"
 
     def __str__(self):
         return f"{self.username} ({self.role})"
+
 
 
 
@@ -68,7 +90,10 @@ class FacultyProfile(models.Model):
         db_table = 'faculty_profiles'
 
     def __str__(self):
-        return self.full_name
+        if self.full_name:
+            return self.full_name
+        return self.user.username
+
 
 
 class Appraisal(models.Model):
@@ -117,7 +142,8 @@ class Appraisal(models.Model):
         )
 
     def __str__(self):
-        return f"{self.faculty} | {self.academic_year} | {self.form_type}"
+        return f"{self.academic_year} | {self.semester} | {self.form_type} | {self.faculty}"
+
 
 
 class ApprovalHistory(models.Model):
@@ -156,7 +182,8 @@ class ApprovalHistory(models.Model):
         unique_together = ('appraisal', 'role')
 
     def __str__(self):
-        return f"{self.role} - {self.action}"
+        return f"{self.appraisal} | {self.role} | {self.action}"
+
 
 
 class AppraisalScore(models.Model):
@@ -178,6 +205,10 @@ class AppraisalScore(models.Model):
 
     class Meta:
         db_table = 'appraisal_scores'
+
+    def __str__(self):
+        return f"{self.appraisal} | Total Score: {self.total_score}"
+
 
 
 class Document(models.Model):
@@ -204,6 +235,11 @@ class Document(models.Model):
         db_table = 'documents'
         unique_together = ('appraisal', 'document_type', 'file_path')
 
+    def __str__(self):
+        return f"{self.document_type} | {self.appraisal}"
+
+
+
 
 class AuditLog(models.Model):
     log_id = models.AutoField(primary_key=True)
@@ -222,6 +258,9 @@ class AuditLog(models.Model):
     class Meta:
         db_table = 'audit_logs'
 
+    def __str__(self):
+        return f"{self.user} | {self.action} | {self.entity} ({self.entity_id})"
+
 
 class GeneratedPDF(models.Model):
     pdf_id = models.AutoField(primary_key=True)
@@ -237,3 +276,6 @@ class GeneratedPDF(models.Model):
 
     class Meta:
         db_table = 'generated_pdfs'
+
+    def __str__(self):
+        return f"PDF | {self.appraisal}"

@@ -1,5 +1,6 @@
 from django.urls import path
 from api.views.auth import RegisterAPI
+from .views.test import WhoAmI
 from .views.auth import LoginAPI
 from .views.faculty import FacultySubmitAPI
 from .views.hod import HODReviewAPI
@@ -27,4 +28,6 @@ urlpatterns = [
     path('register/', RegisterAPI.as_view()),
 
     path('login/', LoginAPI.as_view()),
+
+    path("whoami/", WhoAmI.as_view()),
 ]

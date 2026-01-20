@@ -5,57 +5,67 @@ from validation.master_validator import validate_full_form
 from scoring.engine import calculate_full_score
 from workflow.engine import perform_action
 
-
-class FacultySubmitAPI(APIView):
-    def post(self, request):
-        payload = request.data
-
-        # 1. VALIDATION
-        ok, err = validate_full_form(payload)
-        if not ok:
-            return Response({"error": err}, status=400)
-
-        # 2. SCORING
-        score_result = calculate_full_score(payload)
-
-        # 3. WORKFLOW
-        new_state = perform_action(
-            role=payload["role"],
-            action=payload["submit_action"],
-            current_state="draft"
-        )
-
-        return Response({
-            "message": "Form submitted successfully",
-            "state": new_state,
-            "score": score_result["total_score"],
-            "score_details": score_result
-        })
 from rest_framework.permissions import IsAuthenticated
+from django.db import transaction
+
+from core.models import User, FacultyProfile, Appraisal, AppraisalScore
+from workflow.states import States
 from api.permissions import IsRole
 
-class FacultySubmitAPI(APIView):
-    permission_classes = [IsAuthenticated, IsRole]
-    allowed_roles = ["FACULTY", "HOD"]  # HOD can submit own form
 
+class FacultySubmitAPI(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @transaction.atomic
     def post(self, request):
+        user = request.user
+
+        # 1️⃣ Get faculty profile
+        try:
+            faculty = FacultyProfile.objects.get(user=user)
+        except FacultyProfile.DoesNotExist:
+            return Response({"error": "Faculty profile not found"}, status=400)
+
         payload = request.data
 
-        # validation
+        # 2️⃣ VALIDATION
         ok, err = validate_full_form(payload)
         if not ok:
             return Response({"error": err}, status=400)
 
-        score = calculate_full_score(payload)
+        # 3️⃣ SCORING
+        score_result = calculate_full_score(payload)
 
+        # 4️⃣ WORKFLOW (Faculty submit)
         new_state = perform_action(
-            role=request.user.role.lower(),
-            action=payload["submit_action"],
-            current_state=payload["current_state"]
+            role="faculty",
+            action="submit",
+            current_state = States.DRAFT
+        )
+
+        # 5️⃣ CREATE APPRAISAL
+        appraisal = Appraisal.objects.create(
+            faculty=faculty,
+            form_type=payload["general"]["form_type"],
+            academic_year=payload["general"]["academic_year"],
+            semester=payload["general"]["semester"],
+            appraisal_data=payload,
+            status=new_state
+        )
+
+        # 6️⃣ CREATE APPRAISAL SCORE
+        AppraisalScore.objects.create(
+            appraisal=appraisal,
+            teaching_score=score_result["teaching"]["score"],
+            research_score=score_result["research"]["total"],
+            activity_score=score_result["activities"]["score"],
+            feedback_score=score_result["pbas"]["total"],
+            total_score=score_result["total_score"]
         )
 
         return Response({
-            "message": "Form submitted",
-            "state": new_state,
-            "score": score["total_score"]
-        })
+            "message": "Appraisal submitted successfully",
+            "appraisal_id": appraisal.appraisal_id,
+            "current_state": new_state,
+            "total_score": score_result["total_score"]
+        }, status=201)
