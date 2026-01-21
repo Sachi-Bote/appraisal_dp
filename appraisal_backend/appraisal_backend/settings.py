@@ -86,9 +86,9 @@ WSGI_APPLICATION = 'appraisal_backend.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'faculty_appraisal_db',
-        'USER': 'appraisal_user',
-        'PASSWORD': 'appraisal@2026',
+        'NAME': 'appraisal_db',
+        'USER': 'appraisal_manager',
+        'PASSWORD': 'appraisal@123',
         'HOST': 'localhost',
         'PORT': '5432',
     }
@@ -149,7 +149,7 @@ REST_FRAMEWORK = {
 }
 
 SIMPLE_JWT = {
-    "USER_ID_FIELD": "user_id",
+    "USER_ID_FIELD": "id",
     "USER_ID_CLAIM": "user_id",
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=60),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=1),

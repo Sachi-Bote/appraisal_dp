@@ -3,24 +3,33 @@ from django.utils import timezone
 from django.contrib.auth.hashers import make_password, check_password
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, BaseUserManager
 
-
-
 class UserManager(BaseUserManager):
-    def create_user(self, username, password=None, role="FACULTY"):
+    def create_user(self, username, password=None, role="FACULTY", **extra_fields):
         if not username:
             raise ValueError("Username is required")
 
-        user = self.model(username=username, role=role)
+        user = self.model(
+            username=username,
+            role=role,
+            is_active=True,
+            **extra_fields
+        )
         user.set_password(password)
         user.save(using=self._db)
         return user
 
-    def create_superuser(self, username, password):
-        user = self.create_user(username, password, role="PRINCIPAL")
-        user.is_staff = True
-        user.is_superuser = True
-        user.save(using=self._db)
-        return user
+    def create_superuser(self, username, password, **extra_fields):
+        extra_fields.setdefault("is_staff", True)
+        extra_fields.setdefault("is_superuser", True)
+        extra_fields.setdefault("role", "ADMIN")
+
+        if not extra_fields.get("is_staff"):
+            raise ValueError("Superuser must have is_staff=True.")
+        if not extra_fields.get("is_superuser"):
+            raise ValueError("Superuser must have is_superuser=True.")
+
+        return self.create_user(username, password, **extra_fields)
+
 
 
 class User(AbstractBaseUser, PermissionsMixin):
@@ -28,24 +37,22 @@ class User(AbstractBaseUser, PermissionsMixin):
         ("FACULTY", "Faculty"),
         ("HOD", "HOD"),
         ("PRINCIPAL", "Principal"),
+        ("ADMIN", "Admin"),
     )
 
-    user_id = models.AutoField(primary_key=True)
     username = models.CharField(max_length=150, unique=True)
     role = models.CharField(max_length=20, choices=ROLE_CHOICES)
 
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
+    is_superuser = models.BooleanField(default=False)  # 👈 ADD THIS
 
-    created_at = models.DateTimeField(default=timezone.now)
+    date_joined = models.DateTimeField(default=timezone.now)
 
     objects = UserManager()
 
     USERNAME_FIELD = "username"
     REQUIRED_FIELDS = []
-
-    class Meta:
-        db_table = "users"
 
     def __str__(self):
         return f"{self.username} ({self.role})"
@@ -53,9 +60,20 @@ class User(AbstractBaseUser, PermissionsMixin):
 
 
 
+
+
 class Department(models.Model):
     department_id = models.AutoField(primary_key=True)
     department_name = models.CharField(max_length=100, unique=True)
+
+    # ✅ ADD THIS
+    hod = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="headed_departments"
+    )
 
     class Meta:
         db_table = 'departments'
@@ -105,7 +123,11 @@ class Appraisal(models.Model):
     STATUS_CHOICES = (
         ('DRAFT', 'Draft'),
         ('SUBMITTED', 'Submitted'),
+        ('REVIEWD_BY_HOD', 'Reviewed by HOD'),
+        ('RETURNED_BY_HOD', 'Returned by HOD'),
         ('HOD_APPROVED', 'HOD Approved'),
+        ('REVIEWD_BY_PRINCIPAL', 'Reviewed by Principal'),
+        ('RETURNED_BY_PRINCIPAL', 'Returned by Principal'),
         ('PRINCIPAL_APPROVED', 'Principal Approved'),
         ('LOCKED', 'Locked'),
     )
@@ -118,9 +140,27 @@ class Appraisal(models.Model):
         db_column='faculty_id'
     )
 
+    # 👇 NEW (for workflow tracking)
+    hod = models.ForeignKey(
+        'core.User',
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name='hod_appraisals'
+    )
+
+    principal = models.ForeignKey(
+        'core.User',
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name='principal_appraisals'
+    )
+
     form_type = models.CharField(max_length=20, choices=FORM_TYPE_CHOICES)
     academic_year = models.CharField(max_length=20)
     semester = models.CharField(max_length=10)
+
     appraisal_data = models.JSONField()
 
     status = models.CharField(
@@ -129,8 +169,11 @@ class Appraisal(models.Model):
         default='DRAFT'
     )
 
+    # 👇 NEW (for return / correction comments)
+    remarks = models.TextField(null=True, blank=True)
+
     created_at = models.DateTimeField(default=timezone.now)
-    updated_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         db_table = 'appraisals'
@@ -143,6 +186,7 @@ class Appraisal(models.Model):
 
     def __str__(self):
         return f"{self.academic_year} | {self.semester} | {self.form_type} | {self.faculty}"
+
 
 
 
@@ -161,19 +205,25 @@ class ApprovalHistory(models.Model):
     approval_id = models.AutoField(primary_key=True)
 
     appraisal = models.ForeignKey(
-        Appraisal,
+        "Appraisal",          # ✅ STRING reference
         on_delete=models.CASCADE,
-        db_column='appraisal_id'
+        db_column='appraisal_id',
+        related_name='approval_history'
     )
 
     approved_by = models.ForeignKey(
-        User,
+        "User",               # ✅ STRING reference
         on_delete=models.PROTECT,
-        db_column='approved_by'
+        db_column='approved_by',
+        related_name='approvals_done'
     )
 
     role = models.CharField(max_length=20, choices=ROLE_CHOICES)
     action = models.CharField(max_length=30, choices=ACTION_CHOICES)
+
+    from_state = models.CharField(max_length=50)
+    to_state = models.CharField(max_length=50)
+
     remarks = models.TextField(null=True, blank=True)
     action_at = models.DateTimeField(default=timezone.now)
 
@@ -182,8 +232,7 @@ class ApprovalHistory(models.Model):
         unique_together = ('appraisal', 'role')
 
     def __str__(self):
-        return f"{self.appraisal} | {self.role} | {self.action}"
-
+        return f"{self.appraisal_id} | {self.role} | {self.action}"
 
 
 class AppraisalScore(models.Model):

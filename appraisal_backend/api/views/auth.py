@@ -2,11 +2,16 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import AllowAny
-from rest_framework_simplejwt.tokens import RefreshToken
 
-from api.serializers import RegisterSerializer, LoginSerializer
+from rest_framework_simplejwt.views import TokenObtainPairView
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+
+from api.serializers import RegisterSerializer
 
 
+# =========================
+# REGISTER
+# =========================
 class RegisterAPI(APIView):
     permission_classes = [AllowAny]
 
@@ -21,20 +26,21 @@ class RegisterAPI(APIView):
         )
 
 
+# =========================
+# LOGIN (JWT)
+# =========================
+class LoginSerializer(TokenObtainPairSerializer):
+    @classmethod
+    def get_token(cls, user):
+        token = super().get_token(user)
 
-class LoginAPI(APIView):
+        # Custom claims
+        token["username"] = user.username
+        token["role"] = user.role
+
+        return token
+
+
+class LoginAPI(TokenObtainPairView):
     permission_classes = [AllowAny]
-
-    def post(self, request):
-        serializer = LoginSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-
-        user = serializer.validated_data["user"]
-        refresh = RefreshToken.for_user(user)
-
-        return Response({
-            "access": str(refresh.access_token),
-            "refresh": str(refresh),
-            "username": user.username,
-            "role": user.role
-        }, status=status.HTTP_200_OK)
+    serializer_class = LoginSerializer

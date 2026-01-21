@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from django.contrib.auth import authenticate
 from core.models import User, FacultyProfile
-
+from core.models import Appraisal
 
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
@@ -40,3 +40,11 @@ class LoginSerializer(serializers.Serializer):
 
         data["user"] = user
         return data
+
+
+
+
+class AppraisalSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Appraisal
+        fields = "__all__"

@@ -1,5 +1,4 @@
 
-
 class States:
     DRAFT = "draft"
     SUBMITTED = "submitted"

@@ -18,25 +18,31 @@ class WorkflowEngine:
 
 ROLE_PERMISSIONS = {
     "faculty": ["submit", "resubmit"],
-    "hod": ["submit", "resubmit", "hod_approve", "hod_reject"],
+    "hod": ["start_hod_review", "hod_approve", "hod_reject"],
     "principal": ["principal_approve", "principal_reject"]
 }
 
 
 
 ACTIONS = {
-    # SUBMISSION
+    # FACULTY
     "submit": (States.DRAFT, States.SUBMITTED),
     "resubmit": (States.DRAFT, States.SUBMITTED),
 
-    # HOD REVIEW
-    "hod_approve": (States.SUBMITTED, States.HOD_APPROVED),
-    "hod_reject": (States.SUBMITTED, States.DRAFT),
+    # HOD ACTIONS
+    "start_hod_review": (States.SUBMITTED, States.HOD_REVIEW),
+    "hod_approve": (States.HOD_REVIEW, States.HOD_APPROVED),
+    "hod_reject": (States.HOD_REVIEW, States.DRAFT),
 
-    # PRINCIPAL REVIEW
-    "principal_approve": (States.HOD_APPROVED, States.PRINCIPAL_APPROVED),
-    "principal_reject": (States.HOD_APPROVED, States.DRAFT),
+    # PRINCIPAL ACTIONS
+    "start_principal_review": (States.HOD_APPROVED, States.PRINCIPAL_REVIEW),
+    "principal_approve": (States.PRINCIPAL_REVIEW, States.PRINCIPAL_APPROVED),
+    "principal_reject": (States.PRINCIPAL_REVIEW, States.DRAFT),
+
+    # FINAL
+    "finalize": (States.PRINCIPAL_APPROVED, States.FINALIZED),
 }
+
 
 
 
@@ -45,6 +51,13 @@ def is_action_allowed(role, action):
 
 
 def perform_action(role, action, current_state):
+    # normalize role
+    role = role.lower()
+
+    # ✅ normalize state correctly
+    if isinstance(current_state, str):
+        current_state = current_state.lower()
+
     # 1. Role permission check
     if not is_action_allowed(role, action):
         raise PermissionError(

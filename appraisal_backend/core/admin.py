@@ -11,7 +11,14 @@ from .models import (
     GeneratedPDF,
 )
 
-admin.site.register(User)
+
+@admin.register(User)
+class UserAdmin(admin.ModelAdmin):
+    list_display = ("username", "role", "is_active", "is_staff")
+    list_filter = ("role", "is_active")
+    search_fields = ("username",)
+
+
 admin.site.register(Department)
 admin.site.register(FacultyProfile)
 admin.site.register(Appraisal)
