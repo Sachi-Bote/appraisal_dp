@@ -13,7 +13,14 @@ from .research_rules import validate_research_payload
 from .pbas_rules import validate_pbas_scores
 
 # Top-level required keys for a single appraisal submission payload
-TOP_LEVEL_REQUIRED = {"faculty_id", "year", "teaching", "activities", "research", "pbas", "submit_action", "role"}
+TOP_LEVEL_REQUIRED = {
+    "general",
+    "teaching",
+    "activities",
+    "research",
+    "pbas",
+    "submit_action"
+}
 
 
 def validate_full_form(payload: Dict) -> Tuple[bool, str]:
@@ -39,7 +46,16 @@ def validate_full_form(payload: Dict) -> Tuple[bool, str]:
     if not ok:
         return False, err
 
+    general = payload.get("general", {})
 
+    if not isinstance(general, dict):
+        return False, "general must be an object"
+
+    required_general_fields = {"academic_year", "semester", "form_type"}
+
+    missing = required_general_fields - general.keys()
+    if missing:
+        return False, f"Missing general fields: {sorted(missing)}"
     # Validate tutorial / teaching block
     ok, err = validate_teaching_input(payload["teaching"])
     if not ok:
