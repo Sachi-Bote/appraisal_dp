@@ -38,6 +38,12 @@ class FacultySubmitAPI(APIView):
 
         payload = request.data
         general = payload.get("general", {})
+        
+        # checking if the appraisal is already finalized
+        if appraisal.status == States.FINALIZED:
+            return Response({"error": "Finalized appraisal cannot be modified"},
+        status=403
+        )
 
         # 2️⃣ VALIDATION
         ok, err = validate_full_form(payload)

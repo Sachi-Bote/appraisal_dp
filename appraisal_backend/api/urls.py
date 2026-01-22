@@ -2,7 +2,7 @@ from django.urls import path
 from api.views.auth import RegisterAPI, LoginAPI
 from api.views.test import WhoAmI
 from api.views.faculty import FacultySubmitAPI
-from api.views.principal import PrincipalApproveAPI
+from api.views.principal import PrincipalApproveAPI, PrincipalReturnAPI
 from api.views.scoring_api import ScoringAPI
 from api.views.workflow_api import WorkflowAPI
 from api.views.hod import (
@@ -11,6 +11,13 @@ from api.views.hod import (
     HODReturnAppraisal,
     HODStartReviewAppraisal,   # 👈 ADD THIS
 )
+from api.views.principal import(
+    PrincipalApproveAPI,
+    PrincipalAppraisalList,
+    PrincipalStartReviewAPI,
+    PrincipalReturnAPI,
+    PrincipalFinalizeAPI,
+) 
 
 urlpatterns = [
     # AUTH
@@ -37,9 +44,12 @@ urlpatterns = [
         HODReturnAppraisal.as_view()
     ),
 
-    # PRINCIPAL
-    path("principal/approve/", PrincipalApproveAPI.as_view()),
-
+    # PRINCIPAL   
+    path("principal/appraisal/<int:appraisal_id>/approve/",PrincipalApproveAPI.as_view()),
+    path("principal/appraisals/", PrincipalAppraisalList.as_view()),
+    path("principal/appraisal/<int:appraisal_id>/start-review/",PrincipalStartReviewAPI.as_view()),
+    path("principal/appraisal/<int:appraisal_id>/return/", PrincipalReturnAPI.as_view()),
+    path("principal/appraisal/<int:appraisal_id>/finalize/", PrincipalFinalizeAPI.as_view()),
     # OTHER
     path("score/calculate/", ScoringAPI.as_view()),
     path("workflow/transition/", WorkflowAPI.as_view()),

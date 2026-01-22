@@ -1,3 +1,4 @@
+from dbm import error
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
@@ -38,6 +39,11 @@ class HODStartReviewAppraisal(APIView):
                 {"error": "You cannot review appraisals outside your department"},
                 status=403
             )
+        
+        if appraisal.status == States.FINALIZED:
+            return Response({"error": "Finalized appraisal cannot be modified"},
+        status=403
+        )
 
         # 4️⃣ Workflow transition
         try:
@@ -128,6 +134,10 @@ class HODApproveAppraisal(APIView):
                 status=400
             )
 
+        if appraisal.status == States.FINALIZED:
+            return Response({"error": "Finalized appraisal cannot be modified"},
+            status=403
+        )
         # ✅ Approve
         new_state = perform_action(
             role="HOD",
@@ -191,6 +201,12 @@ class HODReturnAppraisal(APIView):
                 status=400
             )
 
+        if appraisal.status == States.FINALIZED:
+            return Response({"error": "Finalized appraisal cannot be modified"},
+            status=403
+        )
+
+        
         new_state = perform_action(
             role="hod",
             action="hod_reject",

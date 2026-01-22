@@ -19,7 +19,7 @@ class WorkflowEngine:
 ROLE_PERMISSIONS = {
     "faculty": ["submit", "resubmit"],
     "hod": ["start_hod_review", "hod_approve", "hod_reject"],
-    "principal": ["principal_approve", "principal_reject"]
+    "principal": ["start_principal_review", "principal_approve", "principal_reject", "finalize"],
 }
 
 
