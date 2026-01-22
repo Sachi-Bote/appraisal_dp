@@ -130,7 +130,7 @@ class HODApproveAppraisal(APIView):
 
         # ✅ Approve
         new_state = perform_action(
-            role="hod",
+            role="HOD",
             action="hod_approve",
             current_state=appraisal.status
         )
@@ -141,10 +141,11 @@ class HODApproveAppraisal(APIView):
 
         ApprovalHistory.objects.create(
             appraisal=appraisal,
-            action="hod_approve",
+            approved_by=request.user,   # ✅ correct field
+            role="HOD",
+            action="APPROVED",
             from_state=States.HOD_REVIEW,
             to_state=new_state,
-            acted_by=request.user,
             remarks=None
         )
 
@@ -203,11 +204,12 @@ class HODReturnAppraisal(APIView):
 
         ApprovalHistory.objects.create(
             appraisal=appraisal,
-            action="hod_reject",
+            approved_by=request.user,   # ✅ correct field
+            role="HOD",
+            action="REJECTED",
             from_state=States.HOD_REVIEW,
             to_state=new_state,
-            acted_by=request.user,
-            remarks=remarks
+            remarks=None
         )
 
         return Response({
