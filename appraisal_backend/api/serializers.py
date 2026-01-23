@@ -2,76 +2,97 @@ from rest_framework import serializers
 from django.contrib.auth import authenticate
 from core.models import HODProfile, PrincipalProfile, User, FacultyProfile
 from core.models import Appraisal
-
+from django.db import transaction
 from rest_framework import serializers
 from core.models import User, FacultyProfile, Department
 
 
-class RegisterSerializer(serializers.ModelSerializer):
+class RegisterSerializer(serializers.Serializer):
+    # 🔐 Auth fields
+    email = serializers.EmailField()
     password = serializers.CharField(write_only=True)
-    department = serializers.CharField(required=False, write_only=True)
 
-    class Meta:
-        model = User
-        fields = ("username", "password", "role", "department")
+    # 🔑 Role & scope
+    role = serializers.ChoiceField(choices=["FACULTY", "HOD", "PRINCIPAL"])
+    department = serializers.CharField(required=False)
 
+    # 👤 Profile fields
+    full_name = serializers.CharField()
+    designation = serializers.CharField(required=False, allow_blank=True)
+    mobile = serializers.CharField()
+    date_of_joining = serializers.DateField(required=False)
+
+    @transaction.atomic
     def create(self, validated_data):
-        password = validated_data.pop("password")
-        role = validated_data.get("role")
-        department_name = validated_data.pop("department", None)
+        role = validated_data["role"]
+        department_name = validated_data.get("department")
 
-        # ✅ Create user first
+        # 🔒 Role–department rules
+        if role in ["FACULTY", "HOD"] and not department_name:
+            raise serializers.ValidationError({
+                "department": "Department is required for this role"
+            })
+
+        if role == "PRINCIPAL" and department_name:
+            raise serializers.ValidationError({
+                "department": "Principal must not have a department"
+            })
+
+        # 🔎 Resolve department (case-insensitive)
+        department = None
+        if department_name:
+            try:
+                department = Department.objects.get(
+                    department_name__iexact=department_name.strip()
+                )
+            except Department.DoesNotExist:
+                raise serializers.ValidationError({
+                    "department": "Invalid department name"
+                })
+
+        # 🚫 Prevent multiple HODs per department
+        if role == "HOD" and department.hod is not None:
+            raise serializers.ValidationError({
+                "department": "This department already has an HOD"
+            })
+
+        # 👤 Create User (EMAIL IS IDENTITY)
         user = User(
-            username=validated_data["username"],
+            email=validated_data["email"],
             role=role
         )
-        user.set_password(password)
+        user.set_password(validated_data["password"])
         user.save()
 
-        # ✅ Create FacultyProfile ONLY for faculty
+        # 👥 Create role-specific profile
         if role == "FACULTY":
-            if not department_name:
-                raise serializers.ValidationError(
-                    {"department": "Department is required for faculty"}
-                )
-
-            department = Department.objects.get(
-                department_name=department_name
-            )
-
             FacultyProfile.objects.create(
                 user=user,
-                department=department
+                full_name=validated_data["full_name"],
+                designation=validated_data.get("designation"),
+                department=department,
+                date_of_joining=validated_data.get("date_of_joining"),
+                mobile=validated_data["mobile"]
             )
 
         elif role == "HOD":
-            if not department_name:
-                raise serializers.ValidationError(
-                    {"department": "Department is required for HOD"}
-                )
-
-            department = Department.objects.get(
-                department_name=department_name
-            )
-
             HODProfile.objects.create(
                 user=user,
-                department=department
+                full_name=validated_data["full_name"],
+                department=department,
+                mobile=validated_data["mobile"]
             )
-        
+            department.hod = user
+            department.save()
+
         elif role == "PRINCIPAL":
-            if department_name:
-                raise serializers.ValidationError(
-                    {"department": "Department is not required for principal"}
-                )
-
             PrincipalProfile.objects.create(
-                user=user
+                user=user,
+                full_name=validated_data["full_name"],
+                mobile=validated_data["mobile"]
             )
 
-        # 🚫 HOD / PRINCIPAL must NOT get FacultyProfile
         return user
-
 
 class LoginSerializer(serializers.Serializer):
     username = serializers.CharField()

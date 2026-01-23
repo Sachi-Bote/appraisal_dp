@@ -2,6 +2,8 @@
 class States:
     DRAFT = "draft"
     SUBMITTED = "submitted"
+    HOD_DRAFT = "hod_draft"
+    HOD_SUBMITTED = "hod_submitted"
     HOD_REVIEW = "hod_review"
     HOD_APPROVED = "hod_approved"
     PRINCIPAL_REVIEW = "principal_review"
