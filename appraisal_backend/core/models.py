@@ -4,18 +4,40 @@ from django.contrib.auth.hashers import make_password, check_password
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, BaseUserManager
 
 class UserManager(BaseUserManager):
-    def create_user(self, username, password=None, role="FACULTY", **extra_fields):
+    def create_user(self, username, password=None, role=None, department=None, **extra_fields):
         if not username:
             raise ValueError("Username is required")
 
         user = self.model(
             username=username,
             role=role,
+            department=None,
             is_active=True,
             **extra_fields
         )
+
         user.set_password(password)
-        user.save(using=self._db)
+        user.save(using=self._db)   # ✅ SAVE FIRST
+
+        if role == "FACULTY":
+            FacultyProfile.objects.create(
+                user=user,
+                department=department
+            )
+
+        elif role == "HOD":
+            hod_profile = HODProfile.objects.create(
+                user=user,
+                department=department
+            )
+
+            # ✅ KEEP Department.hod IN SYNC
+            department.hod = user
+            department.save()
+
+        elif role == "PRINCIPAL":
+            PrincipalProfile.objects.create(user=user)
+
         return user
 
     def create_superuser(self, username, password, **extra_fields):
@@ -42,6 +64,7 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     username = models.CharField(max_length=150, unique=True)
     role = models.CharField(max_length=20, choices=ROLE_CHOICES)
+    department = models.CharField(max_length=100, null=True, blank=True)
 
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
@@ -56,10 +79,6 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     def __str__(self):
         return f"{self.username} ({self.role})"
-
-
-
-
 
 
 class Department(models.Model):
@@ -92,7 +111,7 @@ class FacultyProfile(models.Model):
     )
 
     department = models.ForeignKey(
-         Department,
+        Department,
         on_delete=models.PROTECT,
         null=True,
         blank=True
@@ -107,11 +126,56 @@ class FacultyProfile(models.Model):
     class Meta:
         db_table = 'faculty_profiles'
 
+
     def __str__(self):
         if self.full_name:
             return self.full_name
         return self.user.username
 
+class HODProfile(models.Model):
+    hod_id = models.AutoField(primary_key=True)
+
+    user = models.OneToOneField(
+        User,
+        on_delete=models.CASCADE,
+        db_column='user_id'
+    )
+
+    department = models.OneToOneField(
+        Department,
+        on_delete=models.PROTECT,
+        related_name="hod_profile"
+    )
+
+    full_name = models.CharField(max_length=100)
+    email = models.EmailField(max_length=100, null=True, blank=True)
+    mobile = models.CharField(max_length=15, null=True, blank=True)
+
+    class Meta:
+        db_table = 'hod_profiles'
+        
+
+    def __str__(self):
+        return f"HOD - {self.full_name} ({self.department})"
+
+class PrincipalProfile(models.Model):
+    principal_id = models.AutoField(primary_key=True)
+
+    user = models.OneToOneField(
+        User,
+        on_delete=models.CASCADE,
+        db_column='user_id'
+    )
+
+    full_name = models.CharField(max_length=100)
+    email = models.EmailField(max_length=100, null=True, blank=True)
+    mobile = models.CharField(max_length=15, null=True, blank=True)
+
+    class Meta:
+        db_table = 'principal_profiles'
+
+    def __str__(self):
+        return f"Principal - {self.full_name}"
 
 
 class Appraisal(models.Model):

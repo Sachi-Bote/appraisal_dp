@@ -3,6 +3,8 @@ from .models import (
     User,
     Department,
     FacultyProfile,
+    HODProfile,
+    PrincipalProfile,
     Appraisal,
     ApprovalHistory,
     AppraisalScore,
@@ -19,6 +21,7 @@ class UserAdmin(admin.ModelAdmin):
     search_fields = ("username",)
 
 
+
 admin.site.register(Department)
 admin.site.register(FacultyProfile)
 admin.site.register(Appraisal)
@@ -27,3 +30,5 @@ admin.site.register(AppraisalScore)
 admin.site.register(Document)
 admin.site.register(AuditLog)
 admin.site.register(GeneratedPDF)
+admin.site.register(HODProfile)
+admin.site.register(PrincipalProfile)   
