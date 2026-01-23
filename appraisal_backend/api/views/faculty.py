@@ -36,22 +36,53 @@ class FacultySubmitAPI(APIView):
                 status=400
             )
 
-        payload = request.data
-        general = payload.get("general", {})
+        meta = request.data
+        payload = request.data.get("appraisal_data")
+
+        if not payload:
+            return Response(
+                {"error": "appraisal_data is required"},
+                status=400
+            )
+
+        def validate_full_form(payload, meta):
+            general = payload.get("general", {})
+
+            required_general_fields = [
+                "faculty_name",
+                "department",
+                "designation"
+            ]
+
+            missing = [k for k in required_general_fields if k not in general]
+            if missing:
+                return False, f"Missing general fields: {missing}"
+
+            required_meta_fields = [
+                "academic_year",
+                "semester",
+                "form_type"
+            ]
+
+            missing_meta = [k for k in required_meta_fields if k not in meta]
+            if missing_meta:
+                return False, f"Missing meta fields: {missing_meta}"
+
+            return True, None
         
         # checking if the appraisal is already finalized
 
         # 2️⃣ VALIDATION
-        ok, err = validate_full_form(payload)
+        ok, err = validate_full_form(payload,meta)
         if not ok:
             return Response({"error": err}, status=400)
 
         # 3️⃣ DUPLICATE CHECK
         if Appraisal.objects.filter(
             faculty=faculty,
-            academic_year=general["academic_year"],
-            semester=general["semester"],
-            form_type=general["form_type"]
+            academic_year = meta["academic_year"],
+            semester = meta["semester"],
+            form_type = meta["form_type"]
         ).exists():
             return Response(
                 {"error": "Appraisal already exists for this period"},
@@ -64,9 +95,9 @@ class FacultySubmitAPI(APIView):
         # 5️⃣ CREATE APPRAISAL (INITIAL STATE = DRAFT)
         appraisal = Appraisal.objects.create(
             faculty=faculty,
-            form_type=general["form_type"],
-            academic_year=general["academic_year"],
-            semester=general["semester"],
+            form_type=meta["form_type"],
+            academic_year=meta["academic_year"],
+            semester=meta["semester"],
             appraisal_data=payload,
             status=States.DRAFT
         )
