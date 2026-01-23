@@ -72,7 +72,8 @@ class RegisterSerializer(serializers.Serializer):
                 designation=validated_data.get("designation"),
                 department=department,
                 date_of_joining=validated_data.get("date_of_joining"),
-                mobile=validated_data["mobile"]
+                mobile=validated_data["mobile"],
+                email=validated_data["email"]
             )
 
         elif role == "HOD":
@@ -80,7 +81,8 @@ class RegisterSerializer(serializers.Serializer):
                 user=user,
                 full_name=validated_data["full_name"],
                 department=department,
-                mobile=validated_data["mobile"]
+                mobile=validated_data["mobile"],
+                email=validated_data["email"]
             )
             department.hod = user
             department.save()
@@ -89,7 +91,8 @@ class RegisterSerializer(serializers.Serializer):
             PrincipalProfile.objects.create(
                 user=user,
                 full_name=validated_data["full_name"],
-                mobile=validated_data["mobile"]
+                mobile=validated_data["mobile"],
+                email=validated_data["email"]
             )
 
         return user
