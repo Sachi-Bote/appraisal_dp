@@ -58,7 +58,7 @@ class RegisterSerializer(serializers.Serializer):
 
         # 👤 Create User (EMAIL IS IDENTITY)
         user = User(
-            email=validated_data["email"],
+            username=validated_data["email"],
             role=role
         )
         user.set_password(validated_data["password"])
