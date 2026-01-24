@@ -33,14 +33,16 @@ class PrincipalApproveAPI(APIView):
         appraisal.principal = request.user
         appraisal.save()
 
-        ApprovalHistory.objects.create(
+        ApprovalHistory.objects.update_or_create(
             appraisal=appraisal,
-            approved_by=request.user,
             role="PRINCIPAL",
-            action="APPROVED",
-            from_state=States.PRINCIPAL_REVIEW,
-            to_state=new_state,
-            remarks=None
+            defaults={
+                "approved_by": request.user,
+                "action": "APPROVED",
+                "from_state": States.PRINCIPAL_REVIEW,
+                "to_state": new_state,
+                "remarks": None
+            }
         )
 
         return Response({
@@ -135,14 +137,16 @@ class PrincipalReturnAPI(APIView):
         appraisal.remarks = remarks
         appraisal.save()
 
-        ApprovalHistory.objects.create(
+        ApprovalHistory.objects.update_or_create(
             appraisal=appraisal,
-            approved_by=request.user,
             role="PRINCIPAL",
-            action="SENT_BACK",
-            from_state=States.PRINCIPAL_REVIEW,
-            to_state=new_state,
-            remarks=remarks
+            defaults={
+                "approved_by": request.user,
+                "action": "SENT_BACK",
+                "from_state": States.PRINCIPAL_REVIEW,
+                "to_state": new_state,
+                "remarks": None
+            }
         )
 
         return Response({

@@ -1,7 +1,7 @@
 from django.urls import path
 from api.views.auth import RegisterAPI, LoginAPI
 from api.views.test import WhoAmI
-from api.views.faculty import FacultySubmitAPI
+from api.views.faculty import FacultyAppraisalListAPI, FacultySubmitAPI, FacultyResubmitAPI
 from api.views.principal import PrincipalApproveAPI, PrincipalReturnAPI
 from api.views.scoring_api import ScoringAPI
 from api.views.workflow_api import WorkflowAPI
@@ -28,6 +28,9 @@ urlpatterns = [
 
     # FACULTY
     path("faculty/submit/", FacultySubmitAPI.as_view()),
+    path("faculty/appraisals/", FacultyAppraisalListAPI.as_view()),
+    path("faculty/appraisal/<int:appraisal_id>/resubmit/", FacultyResubmitAPI.as_view()),
+
 
     # HOD
     path("hod/appraisals/", HODAppraisalList.as_view()),

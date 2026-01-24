@@ -1,3 +1,4 @@
+from api.serializers import AppraisalSerializer
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
@@ -133,3 +134,49 @@ class FacultySubmitAPI(APIView):
             },
             status=201
         )
+
+
+class FacultyAppraisalListAPI(APIView):
+    permission_classes = [IsAuthenticated, IsFaculty]
+
+    def get(self, request):
+        faculty = FacultyProfile.objects.get(user=request.user)
+
+        appraisals = Appraisal.objects.filter(
+            faculty=faculty
+        ).order_by("-updated_at")
+
+        serializer = AppraisalSerializer(appraisals, many=True)
+
+        return Response(serializer.data)
+    
+class FacultyResubmitAPI(APIView):
+    permission_classes = [IsAuthenticated, IsFaculty]
+
+    def post(self, request, appraisal_id):
+        faculty = FacultyProfile.objects.get(user=request.user)
+
+        appraisal = Appraisal.objects.get(
+            appraisal_id=appraisal_id,
+            faculty=faculty
+        )
+
+        if appraisal.status != States.DRAFT:
+            return Response(
+                {"error": "Only draft appraisals can be resubmitted"},
+                status=400
+            )
+
+        # update data
+        appraisal.appraisal_data = request.data["appraisal_data"]
+
+        # workflow
+        appraisal.status = perform_action(
+            role="faculty",
+            action="submit",
+            current_state=States.DRAFT
+        )
+
+        appraisal.save()
+
+        return Response({"message": "Appraisal resubmitted"})

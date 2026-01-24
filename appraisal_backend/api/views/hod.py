@@ -149,14 +149,16 @@ class HODApproveAppraisal(APIView):
         appraisal.hod = request.user
         appraisal.save()
 
-        ApprovalHistory.objects.create(
+        ApprovalHistory.objects.update_or_create(
             appraisal=appraisal,
-            approved_by=request.user,   # ✅ correct field
             role="HOD",
-            action="APPROVED",
-            from_state=States.HOD_REVIEW,
-            to_state=new_state,
-            remarks=None
+            defaults={
+                "approved_by": request.user,
+                "action": "APPROVED",
+                "from_state": States.HOD_REVIEW,
+                "to_state": new_state,
+                "remarks": None
+            }
         )
 
         return Response({
@@ -218,14 +220,16 @@ class HODReturnAppraisal(APIView):
         appraisal.remarks = remarks
         appraisal.save()
 
-        ApprovalHistory.objects.create(
+        ApprovalHistory.objects.update_or_create(
             appraisal=appraisal,
-            approved_by=request.user,   # ✅ correct field
             role="HOD",
-            action="REJECTED",
-            from_state=States.HOD_REVIEW,
-            to_state=new_state,
-            remarks=None
+            defaults={
+                "approved_by": request.user,
+                "action": "REJECTED",
+                "from_state": States.HOD_REVIEW,
+                "to_state": new_state,
+                "remarks": None
+            }
         )
 
         return Response({
