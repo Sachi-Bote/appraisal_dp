@@ -21,14 +21,13 @@ class UserAdmin(admin.ModelAdmin):
     search_fields = ("username",)
 
 
-
+admin.site.register(Appraisal)
 admin.site.register(Department)
 admin.site.register(FacultyProfile)
-admin.site.register(Appraisal)
 admin.site.register(ApprovalHistory)
 admin.site.register(AppraisalScore)
 admin.site.register(Document)
 admin.site.register(AuditLog)
 admin.site.register(GeneratedPDF)
 admin.site.register(HODProfile)
-admin.site.register(PrincipalProfile)   
+admin.site.register(PrincipalProfile)

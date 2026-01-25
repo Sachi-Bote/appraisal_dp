@@ -233,3 +233,5 @@ class HODReturnAppraisal(APIView):
             "message": "Returned to faculty",
             "new_state": new_state
         })
+
+
