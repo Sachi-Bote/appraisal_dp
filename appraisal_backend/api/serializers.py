@@ -57,12 +57,43 @@ class RegisterSerializer(serializers.Serializer):
             })
 
         # 👤 Create User (EMAIL IS IDENTITY)
-        user = User.objects.create_user(
+        user = User(
             username=validated_data["email"],
-            password=validated_data["password"],
-            role=role,
-            department=department
+            role=role
         )
+        user.set_password(validated_data["password"])
+        user.save()
+
+        # 👥 Create role-specific profile
+        if role == "FACULTY":
+            FacultyProfile.objects.create(
+                user=user,
+                full_name=validated_data["full_name"],
+                designation=validated_data.get("designation"),
+                department=department,
+                date_of_joining=validated_data.get("date_of_joining"),
+                mobile=validated_data["mobile"],
+                email=validated_data["email"]
+            )
+
+        elif role == "HOD":
+            HODProfile.objects.create(
+                user=user,
+                full_name=validated_data["full_name"],
+                department=department,
+                mobile=validated_data["mobile"],
+                email=validated_data["email"]
+            )
+            department.hod = user
+            department.save()
+
+        elif role == "PRINCIPAL":
+            PrincipalProfile.objects.create(
+                user=user,
+                full_name=validated_data["full_name"],
+                mobile=validated_data["mobile"],
+                email=validated_data["email"]
+            )
 
         return user
 
