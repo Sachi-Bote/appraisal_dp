@@ -11,7 +11,7 @@ class UserManager(BaseUserManager):
         user = self.model(
             username=username,
             role=role,
-            department=None,
+            department=department.department_name if department else None,
             is_active=True,
             **extra_fields
         )
@@ -65,7 +65,6 @@ class User(AbstractBaseUser, PermissionsMixin):
     username = models.CharField(max_length=150, unique=True)
     role = models.CharField(max_length=20, choices=ROLE_CHOICES)
     department = models.CharField(max_length=100, null=True, blank=True)
-
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
     is_superuser = models.BooleanField(default=False)  # 👈 ADD THIS
