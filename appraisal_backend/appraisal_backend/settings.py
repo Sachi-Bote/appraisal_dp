@@ -87,8 +87,8 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'appraisal_db',
-        'USER': 'appraisal_user',
-        'PASSWORD': '1234',
+        'USER': 'appraisal_manager',
+        'PASSWORD': 'appraisal@123',
         'HOST': 'localhost',
         'PORT': '5432',
     }
