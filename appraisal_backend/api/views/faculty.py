@@ -105,9 +105,8 @@ class FacultySubmitAPI(APIView):
 
         # 6️⃣ WORKFLOW: FACULTY SUBMIT
         new_state = perform_action(
-            role="faculty",
-            action="submit",
-            current_state=States.DRAFT
+            current_state=appraisal.status,
+            next_state=States.SUBMITTED
         )
         appraisal.status = new_state
 
@@ -172,9 +171,8 @@ class FacultyResubmitAPI(APIView):
 
         # workflow
         appraisal.status = perform_action(
-            role="faculty",
-            action="submit",
-            current_state=States.DRAFT
+            current_state=appraisal.status,
+            next_state=States.SUBMITTED
         )
 
         appraisal.save()

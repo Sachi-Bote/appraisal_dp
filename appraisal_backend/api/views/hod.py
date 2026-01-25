@@ -48,9 +48,8 @@ class HODStartReviewAppraisal(APIView):
         # 4️⃣ Workflow transition
         try:
             new_state = perform_action(
-                role="hod",
-                action="start_hod_review",
-                current_state=appraisal.status
+                current_state=appraisal.status,
+                next_state=States.REVIEWED_BY_HOD
             )
         except Exception as e:
             return Response({"error": str(e)}, status=400)
@@ -83,7 +82,7 @@ class HODAppraisalList(APIView):
 
         appraisals = Appraisal.objects.filter(
             faculty__department=department,
-            status__in=[States.SUBMITTED, States.HOD_REVIEW]
+            status__in=[States.SUBMITTED, States.REVIEWED_BY_HOD]
         )
 
         return Response([
@@ -128,7 +127,7 @@ class HODApproveAppraisal(APIView):
             )
 
         # ❌ Invalid state
-        if appraisal.status != States.HOD_REVIEW:
+        if appraisal.status != States.REVIEWED_BY_HOD:
             return Response(
                 {"error": "Appraisal not in HOD review state"},
                 status=400
@@ -140,9 +139,8 @@ class HODApproveAppraisal(APIView):
         )
         # ✅ Approve
         new_state = perform_action(
-            role="HOD",
-            action="hod_approve",
-            current_state=appraisal.status
+            current_state=appraisal.status,
+            next_state=States.HOD_APPROVED
         )
 
         appraisal.status = new_state
@@ -155,7 +153,7 @@ class HODApproveAppraisal(APIView):
             defaults={
                 "approved_by": request.user,
                 "action": "APPROVED",
-                "from_state": States.HOD_REVIEW,
+                "from_state": States.REVIEWED_BY_HOD,
                 "to_state": new_state,
                 "remarks": None
             }
@@ -197,7 +195,7 @@ class HODReturnAppraisal(APIView):
                 status=403
             )
 
-        if appraisal.status != States.HOD_REVIEW:
+        if appraisal.status != States.REVIEWED_BY_HOD:
             return Response(
                 {"error": "Appraisal not in HOD review state"},
                 status=400
@@ -210,9 +208,8 @@ class HODReturnAppraisal(APIView):
 
         
         new_state = perform_action(
-            role="hod",
-            action="hod_reject",
-            current_state=appraisal.status
+            current_state=appraisal.status,
+            next_state=States.DRAFT
         )
 
         appraisal.status = new_state
@@ -226,7 +223,7 @@ class HODReturnAppraisal(APIView):
             defaults={
                 "approved_by": request.user,
                 "action": "REJECTED",
-                "from_state": States.HOD_REVIEW,
+                "from_state": States.REVIEWED_BY_HOD,
                 "to_state": new_state,
                 "remarks": None
             }

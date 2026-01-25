@@ -26,7 +26,7 @@ class UserManager(BaseUserManager):
             )
 
         elif role == "HOD":
-            hod_profile = HODProfile.objects.create(
+            HODProfile.objects.create(
                 user=user,
                 department=department
             )

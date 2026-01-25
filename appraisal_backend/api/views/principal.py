@@ -24,9 +24,8 @@ class PrincipalApproveAPI(APIView):
             )
 
         new_state = perform_action(
-            role="principal",
-            action="principal_approve",
-            current_state=appraisal.status
+            current_state=appraisal.status,
+            next_state=States.PRINCIPAL_APPROVED
         )
 
         appraisal.status = new_state
@@ -39,7 +38,7 @@ class PrincipalApproveAPI(APIView):
             defaults={
                 "approved_by": request.user,
                 "action": "APPROVED",
-                "from_state": States.PRINCIPAL_REVIEW,
+                "from_state": States.REVIEWED_BY_PRINCIPAL,
                 "to_state": new_state,
                 "remarks": None
             }
@@ -56,7 +55,7 @@ class PrincipalAppraisalList(APIView):
 
     def get(self, request):
         appraisals = Appraisal.objects.filter(
-            status__in=[States.HOD_APPROVED, States.PRINCIPAL_REVIEW]
+            status__in=[States.HOD_APPROVED, States.REVIEWED_BY_PRINCIPAL]
         )
 
         return Response([
@@ -88,9 +87,8 @@ class PrincipalStartReviewAPI(APIView):
 
         try:
             new_state = perform_action(
-                role="principal",
-                action="start_principal_review",
-                current_state=appraisal.status
+                current_state=appraisal.status,
+                next_state=States.REVIEWED_BY_PRINCIPAL
             )
         except Exception as e:
             return Response({"error": str(e)}, status=400)
@@ -115,7 +113,7 @@ class PrincipalReturnAPI(APIView):
         except Appraisal.DoesNotExist:
             return Response({"error": "Appraisal not found"}, status=404)
 
-        if appraisal.status != States.PRINCIPAL_REVIEW:
+        if appraisal.status != States.REVIEWED_BY_PRINCIPAL:
             return Response(
                 {"error": "Appraisal not in principal review state"},
                 status=400
@@ -127,9 +125,8 @@ class PrincipalReturnAPI(APIView):
         )
 
         new_state = perform_action(
-            role="principal",
-            action="principal_reject",
-            current_state=appraisal.status
+            current_state=appraisal.status,
+            next_state=States.DRAFT
         )
 
         appraisal.status = new_state
@@ -143,7 +140,7 @@ class PrincipalReturnAPI(APIView):
             defaults={
                 "approved_by": request.user,
                 "action": "SENT_BACK",
-                "from_state": States.PRINCIPAL_REVIEW,
+                "from_state": States.REVIEWED_BY_PRINCIPAL,
                 "to_state": new_state,
                 "remarks": None
             }
@@ -170,9 +167,8 @@ class PrincipalFinalizeAPI(APIView):
             )
 
         new_state = perform_action(
-            role="principal",
-            action="finalize",
-            current_state=appraisal.status
+            current_state=appraisal.status,
+            next_state=States.FINALIZED
         )
 
         appraisal.status = new_state
