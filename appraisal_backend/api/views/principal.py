@@ -55,7 +55,7 @@ class PrincipalAppraisalList(APIView):
 
     def get(self, request):
         appraisals = Appraisal.objects.filter(
-            status__in=[States.HOD_APPROVED, States.REVIEWED_BY_PRINCIPAL]
+            status__in=[States.SUBMITTED, States.HOD_APPROVED, States.REVIEWED_BY_PRINCIPAL]
         )
 
         return Response([

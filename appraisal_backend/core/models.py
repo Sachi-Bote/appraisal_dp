@@ -3,6 +3,7 @@ from django.utils import timezone
 from django.contrib.auth.hashers import make_password, check_password
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, BaseUserManager
 
+
 class UserManager(BaseUserManager):
     def create_user(self, username, password=None, role=None, department=None, **extra_fields):
         if not username:
@@ -22,18 +23,27 @@ class UserManager(BaseUserManager):
         if role == "FACULTY":
             FacultyProfile.objects.create(
                 user=user,
-                department=department
+                department=department,
             )
 
         elif role == "HOD":
+            # 1️⃣ Create FacultyProfile FIRST
+            faculty = FacultyProfile.objects.create(
+                user=user,
+                department=department
+            )
+
+            # 2️⃣ Create HODProfile
             HODProfile.objects.create(
                 user=user,
                 department=department
             )
 
-            # ✅ KEEP Department.hod IN SYNC
+            # 3️⃣ Sync department
             department.hod = user
             department.save()
+
+                    # ✅ KEEP Department.hod IN SYNC
 
         elif role == "PRINCIPAL":
             PrincipalProfile.objects.create(user=user)
@@ -223,7 +233,7 @@ class Appraisal(models.Model):
     form_type = models.CharField(max_length=20, choices=FORM_TYPE_CHOICES)
     academic_year = models.CharField(max_length=20)
     semester = models.CharField(max_length=10)
-
+    is_hod_appraisal = models.BooleanField(default=False)
     appraisal_data = models.JSONField()
 
     status = models.CharField(

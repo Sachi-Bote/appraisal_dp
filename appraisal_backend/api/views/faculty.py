@@ -18,7 +18,6 @@ class FacultySubmitAPI(APIView):
     @transaction.atomic
     def post(self, request):
         user = request.user
-
         # 1️⃣ Faculty profile
         try:
             faculty = FacultyProfile.objects.select_related("department").get(user=user)
@@ -100,7 +99,8 @@ class FacultySubmitAPI(APIView):
             academic_year=meta["academic_year"],
             semester=meta["semester"],
             appraisal_data=payload,
-            status=States.DRAFT
+            status=States.DRAFT,
+            is_hod_appraisal = False
         )
 
         # 6️⃣ WORKFLOW: FACULTY SUBMIT

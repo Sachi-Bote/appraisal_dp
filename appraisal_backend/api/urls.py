@@ -9,7 +9,10 @@ from api.views.hod import (
     HODAppraisalList,
     HODApproveAppraisal,
     HODReturnAppraisal,
-    HODStartReviewAppraisal,   # 👈 ADD THIS
+    HODStartReviewAppraisal,
+    HODSubmitAPI,
+    HODResubmitAPI,
+    HODAppraisalListAPI   # 👈 ADD THIS
 )
 from api.views.principal import(
     PrincipalApproveAPI,
@@ -18,6 +21,7 @@ from api.views.principal import(
     PrincipalReturnAPI,
     PrincipalFinalizeAPI,
 ) 
+
 
 urlpatterns = [
     # AUTH
@@ -46,6 +50,10 @@ urlpatterns = [
         "hod/appraisal/<int:appraisal_id>/return/",
         HODReturnAppraisal.as_view()
     ),
+    path("hod/submit/", HODSubmitAPI.as_view()),
+    path("hod/appraisals/", HODAppraisalListAPI.as_view()),
+    path("hod/resubmit/<int:appraisal_id>/", HODResubmitAPI.as_view()),
+
 
     # PRINCIPAL   
     path("principal/appraisal/<int:appraisal_id>/approve/",PrincipalApproveAPI.as_view()),

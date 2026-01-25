@@ -4,7 +4,7 @@ from core.models import HODProfile, PrincipalProfile, User, FacultyProfile
 from core.models import Appraisal
 from django.db import transaction
 from rest_framework import serializers
-from core.models import User, FacultyProfile, Department
+from core.models import User, FacultyProfile, Department, HODProfile
 
 
 class RegisterSerializer(serializers.Serializer):
@@ -27,7 +27,6 @@ class RegisterSerializer(serializers.Serializer):
         role = validated_data["role"]
         department_name = validated_data.get("department")
 
-        # 🔒 Role–department rules
         if role in ["FACULTY", "HOD"] and not department_name:
             raise serializers.ValidationError({
                 "department": "Department is required for this role"
@@ -38,7 +37,6 @@ class RegisterSerializer(serializers.Serializer):
                 "department": "Principal must not have a department"
             })
 
-        # 🔎 Resolve department (case-insensitive)
         department = None
         if department_name:
             try:
@@ -50,19 +48,19 @@ class RegisterSerializer(serializers.Serializer):
                     "department": "Invalid department name"
                 })
 
-        # 🚫 Prevent multiple HODs per department
-        if role == "HOD" and department.hod is not None:
+        if role == "HOD" and HODProfile.objects.filter(department=department).exists():
             raise serializers.ValidationError({
                 "department": "This department already has an HOD"
             })
 
-        # 👤 Create User (EMAIL IS IDENTITY)
+        # 1️⃣ CREATE USER
         user = User.objects.create_user(
             username=validated_data["email"],
             password=validated_data["password"],
             role=role,
             department=department
         )
+
 
         return user
 

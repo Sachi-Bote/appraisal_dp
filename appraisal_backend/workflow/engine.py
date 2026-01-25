@@ -22,11 +22,14 @@ class WorkflowEngine:
         return self.state
 
 
-def perform_action(*, current_state, next_state):
+def perform_action(*, current_state, next_state, role = None, appraisal = None):
     """
     Core workflow transition validator.
     This is the SINGLE source of truth.
     """
+    # 🚫 HOD cannot act on own appraisal
+    if appraisal and appraisal.is_hod_appraisal and role == "HOD":
+        raise ValueError("HOD cannot act on own appraisal")
 
     if current_state not in VALID_TRANSITIONS:
         raise ValueError(
