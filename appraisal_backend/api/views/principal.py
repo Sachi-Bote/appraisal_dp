@@ -1,3 +1,4 @@
+
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
@@ -7,6 +8,11 @@ from core.models import Appraisal
 from workflow.states import States
 from workflow.engine import perform_action
 from core.models import ApprovalHistory
+
+from core.services.pdf.sppu_pbas import generate_sppu_pbas
+from core.services.pdf.aicte_pbas import generate_aicte_pbas
+from core.services.pdf.save import save_pdf
+
 
 class PrincipalApproveAPI(APIView):
     permission_classes = [IsAuthenticated, IsPrincipal]
@@ -166,6 +172,7 @@ class PrincipalFinalizeAPI(APIView):
                 status=400
             )
 
+        # 1️⃣ Finalize workflow state
         new_state = perform_action(
             current_state=appraisal.status,
             next_state=States.FINALIZED
@@ -174,6 +181,23 @@ class PrincipalFinalizeAPI(APIView):
         appraisal.status = new_state
         appraisal.save()
 
+        # 2️⃣ Generate SPPU PBAS PDF
+        sppu_pdf = generate_sppu_pbas(appraisal)
+        save_pdf(appraisal, sppu_pdf, "SPPU_PBAS")
+
+        # 3️⃣ Generate AICTE PBAS PDF
+        aicte_pdf = generate_aicte_pbas(appraisal)
+        save_pdf(appraisal, aicte_pdf, "AICTE_PBAS")
+
+        # 4️⃣ Audit log
+        log_action(
+            user=request.user,
+            action="Finalized appraisal and generated PDFs",
+            entity="Appraisal",
+            entity_id=appraisal.appraisal_id
+        )
+
+        # 5️⃣ Return response LAST
         return Response({
             "message": "Appraisal finalized successfully",
             "final_state": new_state
