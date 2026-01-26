@@ -10,7 +10,8 @@ from workflow.engine import perform_action
 from api.permissions import IsFaculty
 from workflow.states import States
 from core.models import FacultyProfile, Appraisal, AppraisalScore
-
+from core.utils.audit import log_action
+from core.models import AppraisalScore
 
 class FacultySubmitAPI(APIView):
     permission_classes = [IsAuthenticated, IsFaculty]
@@ -108,6 +109,9 @@ class FacultySubmitAPI(APIView):
             current_state=appraisal.status,
             next_state=States.SUBMITTED
         )
+        old_state = {
+            "status": appraisal.status
+        }
         appraisal.status = new_state
 
         # 7️⃣ ASSIGN HOD
@@ -124,6 +128,18 @@ class FacultySubmitAPI(APIView):
             total_score=score_result["total_score"]
         )
 
+        log_action(
+                request=request,
+                action="SUBMIT_APPRAISAL",
+                entity="Appraisal",
+                entity_id=appraisal.appraisal_id,
+                old_value=old_state,
+                new_value={
+                    "status": appraisal.status,
+                    "faculty_id": faculty.pk
+                }
+            )
+
         return Response(
             {
                 "message": "Appraisal submitted successfully",
@@ -133,8 +149,6 @@ class FacultySubmitAPI(APIView):
             },
             status=201
         )
-
-
 class FacultyAppraisalListAPI(APIView):
     permission_classes = [IsAuthenticated, IsFaculty]
 
@@ -148,10 +162,9 @@ class FacultyAppraisalListAPI(APIView):
         serializer = AppraisalSerializer(appraisals, many=True)
 
         return Response(serializer.data)
-    
 class FacultyResubmitAPI(APIView):
     permission_classes = [IsAuthenticated, IsFaculty]
-
+    @transaction.atomic
     def post(self, request, appraisal_id):
         faculty = FacultyProfile.objects.get(user=request.user)
 
@@ -168,7 +181,9 @@ class FacultyResubmitAPI(APIView):
 
         # update data
         appraisal.appraisal_data = request.data["appraisal_data"]
-
+        old_state = {
+            "status": appraisal.status
+        }
         # workflow
         appraisal.status = perform_action(
             current_state=appraisal.status,
@@ -177,4 +192,15 @@ class FacultyResubmitAPI(APIView):
 
         appraisal.save()
 
+        log_action(
+                request=request,
+                action="SUBMIT_APPRAISAL",
+                entity="Appraisal",
+                entity_id=appraisal.appraisal_id,
+                old_value=old_state,
+                new_value={
+                    "status": appraisal.status,
+                    "faculty_id": faculty.pk
+                }
+            )
         return Response({"message": "Appraisal resubmitted"})

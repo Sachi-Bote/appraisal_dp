@@ -12,6 +12,7 @@ from validation.master_validator import validate_full_form
 from django.db import transaction
 from api.serializers import AppraisalSerializer
 from core.models import FacultyProfile, Appraisal, AppraisalScore, User
+from core.utils.audit import log_action
 
 
 class HODSubmitAPI(APIView):
@@ -94,6 +95,10 @@ class HODSubmitAPI(APIView):
             principal=User.objects.filter(role="PRINCIPAL").first()
         )
 
+        old_state = {
+            "status": appraisal.status
+        }
+
         # 6️⃣ WORKFLOW → SUBMIT
         appraisal.status = perform_action(
             current_state=appraisal.status,
@@ -111,6 +116,17 @@ class HODSubmitAPI(APIView):
             feedback_score=score_result["pbas"]["total"],
             total_score=score_result["total_score"]
         )
+        log_action(
+                request=request,
+                action="SUBMIT_APPRAISAL",
+                entity="Appraisal",
+                entity_id=appraisal.appraisal_id,
+                old_value=old_state,
+                new_value={
+                    "status": appraisal.status,
+                    "faculty_id": appraisal.faculty.pk
+                }
+            )
 
         return Response(
             {
@@ -135,12 +151,6 @@ class HODAppraisalListAPI(APIView):
             is_hod_appraisal=True
         ).order_by("-updated_at")
 
-        # 🚫 HOD cannot act on own appraisal
-        if Appraisal.is_hod_appraisal:
-            return Response(
-                {"error": "HOD cannot review own appraisal"},
-                status=403
-        )
 
         return Response(
             AppraisalSerializer(appraisals, many=True).data
@@ -149,7 +159,7 @@ class HODAppraisalListAPI(APIView):
 
 class HODResubmitAPI(APIView):
     permission_classes = [IsAuthenticated, IsHOD]
-
+    @transaction.atomic
     def post(self, request, appraisal_id):
         faculty = FacultyProfile.objects.get(user=request.user)
 
@@ -165,12 +175,28 @@ class HODResubmitAPI(APIView):
                 status=400
             )
 
+        old_state = {
+            "status": appraisal.status
+        }
+
         appraisal.appraisal_data = request.data["appraisal_data"]
         appraisal.status = perform_action(
             current_state=appraisal.status,
             next_state=States.SUBMITTED
         )
         appraisal.save()
+
+        log_action(
+                request=request,
+                action="SUBMIT_APPRAISAL",
+                entity="Appraisal",
+                entity_id=appraisal.appraisal_id,
+                old_value=old_state,
+                new_value={
+                    "status": appraisal.status,
+                    "faculty_id": appraisal.faculty.pk
+                }
+            )
 
         return Response({"message": "HOD appraisal resubmitted"})
     
@@ -200,11 +226,7 @@ class HODStartReviewAppraisal(APIView):
                 {"error": "HOD is not assigned to any department"},
                 status=400
             )
-        if appraisal.is_hod_appraisal:
-                return Response(
-                    {"error": "HOD cannot review own appraisal"},
-                status=403
-                )
+
         
         # 3️⃣ Ownership check
         if appraisal.faculty.department != department:
@@ -279,11 +301,7 @@ class HODApproveAppraisal(APIView):
                 "faculty__department"
             ).get(appraisal_id=appraisal_id)
 
-            if appraisal.is_hod_appraisal:
-                return Response(
-                    {"error": "HOD cannot review own appraisal"},
-                    status=403
-                )
+
         except Appraisal.DoesNotExist:
             return Response({"error": "Appraisal not found"}, status=404)
 
@@ -349,11 +367,7 @@ class HODReturnAppraisal(APIView):
             appraisal = Appraisal.objects.select_related(
                 "faculty__department"
             ).get(appraisal_id=appraisal_id)
-            if appraisal.is_hod_appraisal:
-                return Response(
-                    {"error": "HOD cannot review own appraisal"},
-                status=403
-                )
+
         except Appraisal.DoesNotExist:
             return Response({"error": "Appraisal not found"}, status=404)
 

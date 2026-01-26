@@ -12,6 +12,10 @@ from core.models import ApprovalHistory
 from core.services.pdf.sppu_pbas import generate_sppu_pbas
 from core.services.pdf.aicte_pbas import generate_aicte_pbas
 from core.services.pdf.save import save_pdf
+from core.utils.audit import log_action
+from core.models import FacultyProfile
+from django.db import transaction
+from core.models import AppraisalScore
 
 
 class PrincipalApproveAPI(APIView):
@@ -159,7 +163,7 @@ class PrincipalReturnAPI(APIView):
 
 class PrincipalFinalizeAPI(APIView):
     permission_classes = [IsAuthenticated, IsPrincipal]
-
+    @transaction.atomic
     def post(self, request, appraisal_id):
         try:
             appraisal = Appraisal.objects.get(appraisal_id=appraisal_id)
@@ -171,7 +175,9 @@ class PrincipalFinalizeAPI(APIView):
                 {"error": "Only principal-approved appraisals can be finalized"},
                 status=400
             )
-
+        old_state = {
+            "status": appraisal.status
+        }
         # 1️⃣ Finalize workflow state
         new_state = perform_action(
             current_state=appraisal.status,
@@ -191,11 +197,16 @@ class PrincipalFinalizeAPI(APIView):
 
         # 4️⃣ Audit log
         log_action(
-            user=request.user,
-            action="Finalized appraisal and generated PDFs",
-            entity="Appraisal",
-            entity_id=appraisal.appraisal_id
-        )
+                request=request,
+                action="SUBMIT_APPRAISAL",
+                entity="Appraisal",
+                entity_id=appraisal.appraisal_id,
+                old_value=old_state,
+                new_value={
+                    "status": appraisal.status,
+                    "faculty_id": appraisal.faculty.pk
+                }
+            )
 
         # 5️⃣ Return response LAST
         return Response({

@@ -338,22 +338,35 @@ class Document(models.Model):
 class AuditLog(models.Model):
     log_id = models.AutoField(primary_key=True)
 
-    user = models.ForeignKey(
-        User,
-        on_delete=models.PROTECT,
-        db_column='user_id'
-    )
+    # Actor snapshot (DO NOT FK)
+    user_id_snapshot = models.IntegerField(null=True)
+    username_snapshot = models.CharField(max_length=150)
+    role_snapshot = models.CharField(max_length=50)
 
-    action = models.TextField()
+    action = models.CharField(max_length=30)
     entity = models.CharField(max_length=50)
     entity_id = models.IntegerField()
-    logged_at = models.DateTimeField(default=timezone.now)
+
+    old_value = models.JSONField(null=True, blank=True)
+    new_value = models.JSONField(null=True, blank=True)
+
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    user_agent = models.TextField(null=True, blank=True)
+
+    logged_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        db_table = 'audit_logs'
+        db_table = "audit_logs"
+        ordering = ["-logged_at"]
+        indexes = [
+            models.Index(fields=["entity", "entity_id"]),
+            models.Index(fields=["user_id_snapshot"]),
+        ]
 
-    def __str__(self):
-        return f"{self.user} | {self.action} | {self.entity} ({self.entity_id})"
+    def save(self, *args, **kwargs):
+        if self.pk:
+            raise RuntimeError("Audit logs are immutable")
+        super().save(*args, **kwargs)
 
 
 class GeneratedPDF(models.Model):
