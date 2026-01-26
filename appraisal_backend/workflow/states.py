@@ -12,7 +12,7 @@ class States:
 
 VALID_TRANSITIONS = {
     States.DRAFT: [States.SUBMITTED],
-    States.SUBMITTED: [States.REVIEWED_BY_HOD],
+    States.SUBMITTED: [States.REVIEWED_BY_HOD, States.REVIEWED_BY_PRINCIPAL],
     States.REVIEWED_BY_HOD: [States.HOD_APPROVED, States.DRAFT],  # reject back to draft
     States.HOD_APPROVED: [States.REVIEWED_BY_PRINCIPAL],
     States.REVIEWED_BY_PRINCIPAL: [States.PRINCIPAL_APPROVED, States.DRAFT],

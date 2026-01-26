@@ -5,7 +5,7 @@ from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, BaseU
 
 
 class UserManager(BaseUserManager):
-    def create_user(self, username, password=None, role=None, department=None, **extra_fields):
+    def create_user(self, username, password=None, role=None, department=None, full_name=None, designation=None, email=None, mobile=None, date_of_joining=None, **extra_fields):
         if not username:
             raise ValueError("Username is required")
 
@@ -19,34 +19,6 @@ class UserManager(BaseUserManager):
 
         user.set_password(password)
         user.save(using=self._db)   # ✅ SAVE FIRST
-
-        if role == "FACULTY":
-            FacultyProfile.objects.create(
-                user=user,
-                department=department,
-            )
-
-        elif role == "HOD":
-            # 1️⃣ Create FacultyProfile FIRST
-            faculty = FacultyProfile.objects.create(
-                user=user,
-                department=department
-            )
-
-            # 2️⃣ Create HODProfile
-            HODProfile.objects.create(
-                user=user,
-                department=department
-            )
-
-            # 3️⃣ Sync department
-            department.hod = user
-            department.save()
-
-                    # ✅ KEEP Department.hod IN SYNC
-
-        elif role == "PRINCIPAL":
-            PrincipalProfile.objects.create(user=user)
 
         return user
 
@@ -126,7 +98,7 @@ class FacultyProfile(models.Model):
         blank=True
     )
 
-    full_name = models.CharField(max_length=100)
+    full_name = models.CharField(max_length=100,null=True,blank=True)
     designation = models.CharField(max_length=50, null=True, blank=True)
     date_of_joining = models.DateField(null=True, blank=True)
     email = models.EmailField(max_length=100, null=True, blank=True)

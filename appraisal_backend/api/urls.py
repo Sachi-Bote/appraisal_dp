@@ -1,5 +1,5 @@
 from django.urls import path
-from api.views.auth import RegisterAPI, LoginAPI
+from api.views.auth import RegisterAPI, LoginAPI, LogoutView
 from api.views.test import WhoAmI
 from api.views.faculty import FacultyAppraisalListAPI, FacultySubmitAPI, FacultyResubmitAPI
 from api.views.principal import PrincipalApproveAPI, PrincipalReturnAPI
@@ -29,6 +29,7 @@ urlpatterns = [
     path("register/", RegisterAPI.as_view()),
     path("login/", LoginAPI.as_view()),
     path("whoami/", WhoAmI.as_view()),
+    path("logout/", LogoutView.as_view()),
 
     # FACULTY
     path("faculty/submit/", FacultySubmitAPI.as_view()),

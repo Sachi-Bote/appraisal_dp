@@ -17,7 +17,7 @@ class PrincipalApproveAPI(APIView):
         except Appraisal.DoesNotExist:
             return Response({"error": "Appraisal not found"}, status=404)
 
-        if appraisal.status != States.PRINCIPAL_REVIEW:
+        if appraisal.status != States.REVIEWED_BY_PRINCIPAL:
             return Response(
                 {"error": "Appraisal not in principal review state"},
                 status=400
