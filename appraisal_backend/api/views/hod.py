@@ -128,6 +128,18 @@ class HODSubmitAPI(APIView):
                 }
             )
 
+        log_action(
+                request=request,
+                action="SUBMIT_APPRAISAL",
+                entity="Appraisal",
+                entity_id=appraisal.appraisal_id,
+                old_value=old_state,
+                new_value={
+                    "status": appraisal.status,
+                    "faculty_id": appraisal.faculty.pk
+                }
+            )
+
         return Response(
             {
                 "message": "HOD appraisal submitted successfully",
@@ -159,6 +171,7 @@ class HODAppraisalListAPI(APIView):
 
 class HODResubmitAPI(APIView):
     permission_classes = [IsAuthenticated, IsHOD]
+
     @transaction.atomic
     def post(self, request, appraisal_id):
         faculty = FacultyProfile.objects.get(user=request.user)

@@ -20,7 +20,8 @@ from api.views.principal import(
     PrincipalStartReviewAPI,
     PrincipalReturnAPI,
     PrincipalFinalizeAPI,
-) 
+)
+from api.views.me import MeView 
 
 
 urlpatterns = [
@@ -30,6 +31,9 @@ urlpatterns = [
     path("login/", LoginAPI.as_view()),
     path("whoami/", WhoAmI.as_view()),
     path("logout/", LogoutView.as_view()),
+
+    #API ME
+    path("me/", MeView.as_view(), name="me"),
 
     # FACULTY
     path("faculty/submit/", FacultySubmitAPI.as_view()),

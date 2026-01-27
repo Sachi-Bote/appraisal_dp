@@ -1,16 +1,19 @@
+import os
+from django.conf import settings
 from core.models import GeneratedPDF
-from django.core.files.base import ContentFile
 
 
 def save_pdf(appraisal, pdf_bytes, pdf_type):
-    filename = f"{pdf_type}_appraisal_{appraisal.id}.pdf"
+    pdf_dir = os.path.join(settings.MEDIA_ROOT, "generated_pdfs")
+    os.makedirs(pdf_dir, exist_ok=True)
 
-    pdf_obj = GeneratedPDF.objects.create(
-        appraisal=appraisal,
-        pdf_path=f"media/generated_pdfs/{filename}"
-    )
+    filename = f"{pdf_type}_appraisal_{appraisal.appraisal_id}.pdf"
+    path = os.path.join(pdf_dir, filename)
 
-    with open(pdf_obj.pdf_path, "wb") as f:
+    with open(path, "wb") as f:
         f.write(pdf_bytes.read())
 
-    return pdf_obj
+    return GeneratedPDF.objects.create(
+        appraisal=appraisal,
+        pdf_path=path
+    )

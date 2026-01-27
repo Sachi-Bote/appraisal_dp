@@ -1,30 +1,9 @@
-# scoring/engine.py
-
-from .teaching import calculate_teaching_score
-from .activities import calculate_activity_score
-from .research import calculate_research_score
-from .pbas import calculate_pbas_score
-
+from scoring.pbas import calculate_pbas_score
+from scoring.research import calculate_research_score
+from scoring.teaching import calculate_teaching_score
+from scoring.activities import calculate_activity_score
 
 def calculate_full_score(payload: dict) -> dict:
-    """
-    Expected payload (already validated):
-
-    {
-        "teaching": {...},
-        "activities": {...},
-        "research": {...},
-        "pbas": {
-            "teaching_process": int,
-            "feedback": int,
-            "department": int,
-            "institute": int,
-            "acr": int,
-            "society": int
-        }
-    }
-    """
-
     teaching_result = calculate_teaching_score(payload["teaching"])
     activity_result = calculate_activity_score(payload["activities"])
     research_result = calculate_research_score(payload["research"])

@@ -10,6 +10,7 @@ from workflow.engine import perform_action
 from api.permissions import IsFaculty
 from workflow.states import States
 from core.models import FacultyProfile, Appraisal, AppraisalScore
+
 from core.utils.audit import log_action
 from core.models import AppraisalScore
 
@@ -46,35 +47,12 @@ class FacultySubmitAPI(APIView):
                 status=400
             )
 
-        def validate_full_form(payload, meta):
-            general = payload.get("general", {})
-
-            required_general_fields = [
-                "faculty_name",
-                "department",
-                "designation"
-            ]
-
-            missing = [k for k in required_general_fields if k not in general]
-            if missing:
-                return False, f"Missing general fields: {missing}"
-
-            required_meta_fields = [
-                "academic_year",
-                "semester",
-                "form_type"
-            ]
-
-            missing_meta = [k for k in required_meta_fields if k not in meta]
-            if missing_meta:
-                return False, f"Missing meta fields: {missing_meta}"
-
-            return True, None
+       
         
         # checking if the appraisal is already finalized
 
         # 2️⃣ VALIDATION
-        ok, err = validate_full_form(payload,meta)
+        ok, err = validate_full_form(payload, meta)
         if not ok:
             return Response({"error": err}, status=400)
 
@@ -91,7 +69,25 @@ class FacultySubmitAPI(APIView):
             )
 
         # 4️⃣ SCORING
-        score_result = calculate_full_score(payload)
+       
+
+        scoring_payload = {
+                "teaching": payload.get("teaching", {}),
+                "activities": payload.get("activities", {}),
+                "research": payload.get("research", {}),
+                "pbas": payload.get("pbas", {})
+        }
+
+        required_sections = ["teaching", "activities", "research", "pbas"]
+        missing = [s for s in required_sections if s not in payload]
+
+        if missing:
+            return Response(
+                {"error": f"Missing appraisal sections: {missing}"},
+                status=400
+            )
+            
+        score_result = calculate_full_score(scoring_payload)
 
         # 5️⃣ CREATE APPRAISAL (INITIAL STATE = DRAFT)
         appraisal = Appraisal.objects.create(
@@ -164,6 +160,7 @@ class FacultyAppraisalListAPI(APIView):
         return Response(serializer.data)
 class FacultyResubmitAPI(APIView):
     permission_classes = [IsAuthenticated, IsFaculty]
+
     @transaction.atomic
     def post(self, request, appraisal_id):
         faculty = FacultyProfile.objects.get(user=request.user)
@@ -181,6 +178,7 @@ class FacultyResubmitAPI(APIView):
 
         # update data
         appraisal.appraisal_data = request.data["appraisal_data"]
+
         old_state = {
             "status": appraisal.status
         }

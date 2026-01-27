@@ -23,68 +23,60 @@ TOP_LEVEL_REQUIRED = {
 }
 
 
-def validate_full_form(payload: Dict) -> Tuple[bool, str]:
-    """
-    Validate a full appraisal submission payload.
+from typing import Dict, Tuple
 
-    Expected top-level shape:
-    {
-      "faculty_id": 1,
-      "year": 2024,
-      "teaching": { ... },
-      "activities": { ... },
-      "research": { ... },
-      "pbas": { ... },
-      "submit_action": "submit",
-      "role": "faculty"
-    }
+def validate_full_form(payload: Dict, meta: Dict) -> Tuple[bool, str]:
     """
+    Validate a full appraisal submission.
+
+    payload  -> appraisal_data
+    meta     -> request.data (academic_year, semester, form_type)
+    """
+
     if not isinstance(payload, dict):
-        return False, "Payload must be a JSON object."
+        return False, "appraisal_data must be a JSON object."
 
-    ok, err = ensure_keys_present(payload, TOP_LEVEL_REQUIRED)
-    if not ok:
-        return False, err
-
+    # ---------- GENERAL ----------
     general = payload.get("general", {})
-
     if not isinstance(general, dict):
         return False, "general must be an object"
 
-    required_general_fields = {"academic_year", "semester", "form_type"}
+    required_general_fields = {"faculty_name", "department", "designation"}
+    missing_general = required_general_fields - general.keys()
+    if missing_general:
+        return False, f"Missing general fields: {sorted(missing_general)}"
 
-    missing = required_general_fields - general.keys()
-    if missing:
-        return False, f"Missing general fields: {sorted(missing)}"
-    # Validate tutorial / teaching block
+    # ---------- META ----------
+    required_meta_fields = {"academic_year", "semester", "form_type"}
+    missing_meta = required_meta_fields - meta.keys()
+    if missing_meta:
+        return False, f"Missing meta fields: {sorted(missing_meta)}"
+
+    # ---------- TEACHING ----------
     ok, err = validate_teaching_input(payload["teaching"])
     if not ok:
         return False, f"Teaching validation failed: {err}"
 
-    # Validate activities
+    # ---------- ACTIVITIES ----------
     ok, err = validate_activities(payload["activities"])
     if not ok:
         return False, f"Activities validation failed: {err}"
 
-    # Validate research
+    # ---------- RESEARCH ----------
     ok, err = validate_research_payload(payload["research"])
     if not ok:
         return False, f"Research validation failed: {err}"
 
-    # Validate PBAS
+    # ---------- PBAS ----------
     ok, err = validate_pbas_scores(payload["pbas"])
     if not ok:
         return False, f"PBAS validation failed: {err}"
 
-    # Optional: Additional sanity checks
-    # e.g., ensure at least one positive contribution in research or activities to avoid empty submission
-    try:
-        research_sum = sum(int(v) for v in payload["research"].values())
-    except Exception:
-        research_sum = 0
+    # ---------- SANITY CHECK ----------
+    research_sum = sum(int(v) for v in payload["research"].values() if isinstance(v, int))
+    activity_sum = sum(int(v) for v in payload["activities"].values() if isinstance(v, int))
 
-    if research_sum == 0 and all(not v for v in payload["activities"].values()):
-        # Not fatal — depends on policy. Here we warn/fail to avoid empty forms.
-        return False, "Submission appears empty: no research items and no activities flagged."
+    if research_sum == 0 and activity_sum == 0:
+        return False, "Submission appears empty: no research or activities."
 
     return True, ""

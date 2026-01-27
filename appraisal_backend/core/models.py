@@ -337,8 +337,6 @@ class Document(models.Model):
 
 class AuditLog(models.Model):
     log_id = models.AutoField(primary_key=True)
-
-    # Actor snapshot (DO NOT FK)
     user_id_snapshot = models.IntegerField(null=True)
     username_snapshot = models.CharField(max_length=150)
     role_snapshot = models.CharField(max_length=50)
@@ -363,10 +361,16 @@ class AuditLog(models.Model):
             models.Index(fields=["user_id_snapshot"]),
         ]
 
+
     def save(self, *args, **kwargs):
         if self.pk:
             raise RuntimeError("Audit logs are immutable")
         super().save(*args, **kwargs)
+
+
+    def save(self, *args, **kwargs):
+        if self.pk:
+            raise RuntimeError("Audit logs are immutable")
 
 
 class GeneratedPDF(models.Model):

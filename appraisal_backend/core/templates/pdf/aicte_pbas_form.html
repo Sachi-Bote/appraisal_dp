@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8"/>
+<title>AICTE PBAS – Part A & B</title>
+
+<style>
+@page {
+    size: A4;
+    margin: 18mm 14mm;
+}
+
+body {
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 12px;
+}
+
+h2, h3, h4 {
+    text-align: center;
+    margin: 4px 0;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 6px;
+}
+
+th, td {
+    border: 1px solid #000;
+    padding: 4px;
+    vertical-align: top;
+}
+
+.center { text-align: center; }
+
+.page-break {
+    page-break-before: always;
+}
+
+.small {
+    font-size: 11px;
+}
+</style>
+</head>
+
+<body>
+
+<!-- ================= HEADER ================= -->
+
+<h3>Savitribai Phule Pune University, Pune</h3>
+<h3>Modern Education Society’s</h3>
+<h2>Wadia College of Engineering, Pune – 01</h2>
+
+<h3>PART ‘A’</h3>
+<h3>YEAR OF PERFORMANCE APPRAISAL : {{ period }}</h3>
+
+<!-- ================= SECTION A ================= -->
+
+<h4>SECTION – A : GENERAL</h4>
+
+<table>
+<colgroup>
+  <col style="width:6%">
+  <col style="width:44%">
+  <col style="width:4%">
+  <col style="width:46%">
+</colgroup>
+
+<tr><td>1</td><td>Name</td><td>:</td><td>{{ faculty.name }}</td></tr>
+<tr><td>2</td><td>Designation</td><td>:</td><td>{{ faculty.designation }}</td></tr>
+<tr><td>3</td><td>Department / Centre</td><td>:</td><td>{{ faculty.department }}</td></tr>
+<tr><td>4</td><td>Email / Mobile</td><td>:</td><td>{{ faculty.email }} / {{ faculty.mobile }}</td></tr>
+<tr><td>5</td><td>Assessment Year</td><td>:</td><td>{{ period }}</td></tr>
+</table>
+
+<!-- ================= SECTION B ================= -->
+
+<h4>SECTION – B : TABLE 1</h4>
+
+<table>
+<colgroup>
+  <col style="width:5%">
+  <col style="width:30%">
+  <col style="width:25%">
+  <col style="width:20%">
+  <col style="width:20%">
+</colgroup>
+
+<tr>
+<th>Sr</th>
+<th>Activity</th>
+<th>Grading Criteria</th>
+<th>Self Appraisal</th>
+<th>Verified</th>
+</tr>
+
+<!-- Teaching -->
+<tr>
+<td class="center">1</td>
+<td class="small">
+Teaching (Classes taught / assigned × 100)
+</td>
+<td class="small">
+≥ 80% : Good<br>
+70–79% : Satisfactory<br>
+&lt; 70% : Not Satisfactory
+</td>
+<td class="small">
+Assigned : {{ teaching.total_assigned }}<br>
+Taught : {{ teaching.total_taught }}<br>
+Percentage : {{ teaching.percentage }}<br>
+<b>Grade : {{ teaching.grade }}</b>
+</td>
+<td class="center">{{ teaching.verified_grade|default:"-" }}</td>
+</tr>
+
+<!-- Activities -->
+<tr>
+<td class="center">2</td>
+<td class="small">
+Student / Research / Academic Activities
+</td>
+<td class="small">
+≥ 3 : Good<br>
+1–2 : Satisfactory<br>
+None : Not Satisfactory
+</td>
+<td class="small">
+{% if activities.list %}
+{% for a in activities.list %}
+{{ forloop.counter }}. {{ a }}<br>
+{% endfor %}
+{% else %}
+-
+{% endif %}
+<br><b>Grade : {{ activities.grade }}</b>
+</td>
+<td class="center">{{ activities.verified_grade|default:"-" }}</td>
+</tr>
+</table>
+
+<div class="page-break"></div>
+
+<!-- ================= TABLE 2 ================= -->
+
+<h4>TABLE 2 – Academic / Research Score</h4>
+
+<table>
+<colgroup>
+  <col style="width:5%">
+  <col style="width:55%">
+  <col style="width:15%">
+  <col style="width:12%">
+  <col style="width:13%">
+</colgroup>
+
+<tr>
+<th>SN</th>
+<th>Activity</th>
+<th>Score</th>
+<th>Self</th>
+<th>Verified</th>
+</tr>
+
+<tr>
+<td class="center">1</td>
+<td>
+Research Papers (Journal + Conference)
+</td>
+<td class="center">8 / paper</td>
+<td class="center">
+Journals : {{ research.journal_count }}<br>
+Conferences : {{ research.conference_count }}<br>
+<b>Total : {{ research.total }}</b>
+</td>
+<td class="center">{{ research.verified|default:"-" }}</td>
+</tr>
+</table>
+
+<!-- ================= SIGNATURES ================= -->
+
+<br>
+
+<table style="border:none;">
+<tr>
+<td style="border:none; width:50%;">
+<b>Signature of Teacher</b><br><br>
+Date : {{ signatures.teacher_date|default:"-" }}
+</td>
+<td style="border:none; text-align:right;">
+<b>Signature of HOD</b><br><br>
+Date : {{ signatures.hod_date|default:"-" }}
+</td>
+</tr>
+</table>
+
+<div class="page-break"></div>
+
+<!-- ================= PART B ================= -->
+
+<h3>PART ‘B’</h3>
+
+<p class="small">
+Assessment by the Principal / Head of Department
+</p>
+
+<table>
+<colgroup>
+  <col style="width:75%">
+  <col style="width:25%">
+</colgroup>
+
+<tr>
+<th>Assessment Criteria</th>
+<th>Verified Grade</th>
+</tr>
+
+<tr>
+<td class="small">
+Good in Teaching and Satisfactory/Good in Activities
+</td>
+<td class="center">
+<b>{{ scores.overall_grade }}</b>
+</td>
+</tr>
+</table>
+
+<br>
+
+<p><b>Justification (if not satisfactory):</b></p>
+<p class="small">{{ remarks.justification|default:"-" }}</p>
+
+<br>
+
+<p><b>Comments of HOD:</b></p>
+<p class="small">{{ remarks.hod_comments|default:"-" }}</p>
+
+<br>
+
+<p><b>Remarks of Principal:</b></p>
+<p class="small">{{ remarks.principal|default:"-" }}</p>
+
+<br>
+
+<table style="border:none;">
+<tr>
+<td style="border:none;">
+<b>Signature (Principal)</b><br><br>
+Date : {{ signatures.principal_date|default:"-" }}
+</td>
+</tr>
+</table>
+
+</body>
+</html>
