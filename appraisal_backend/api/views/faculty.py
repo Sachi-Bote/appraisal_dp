@@ -69,25 +69,32 @@ class FacultySubmitAPI(APIView):
             )
 
         # 4️⃣ SCORING
-       
 
         scoring_payload = {
-                "teaching": payload.get("teaching", {}),
-                "activities": payload.get("activities", {}),
-                "research": payload.get("research", {}),
-                "pbas": payload.get("pbas", {})
+            "teaching": payload.get("teaching", {}),
+            "activities": payload.get("activities", {}),
+            "research": payload.get("research", {}),
+            "pbas": payload.get("pbas", {}),
         }
 
         required_sections = ["teaching", "activities", "research", "pbas"]
-        missing = [s for s in required_sections if s not in payload]
+        missing = [s for s in required_sections if s not in scoring_payload]
 
         if missing:
             return Response(
                 {"error": f"Missing appraisal sections: {missing}"},
                 status=400
             )
-            
+
+        # ✅ PBAS Teaching requires courses
+        if "courses" not in scoring_payload["teaching"]:
+            return Response(
+                {"error": "Teaching courses data is missing"},
+                status=400
+            )
+
         score_result = calculate_full_score(scoring_payload)
+
 
         # 5️⃣ CREATE APPRAISAL (INITIAL STATE = DRAFT)
         appraisal = Appraisal.objects.create(

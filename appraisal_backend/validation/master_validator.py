@@ -53,7 +53,7 @@ def validate_full_form(payload: Dict, meta: Dict) -> Tuple[bool, str]:
         return False, f"Missing meta fields: {sorted(missing_meta)}"
 
     # ---------- TEACHING ----------
-    ok, err = validate_teaching_input(payload["teaching"])
+    ok, err = validate_teaching_input(payload["teaching"], meta.get("form_type"))
     if not ok:
         return False, f"Teaching validation failed: {err}"
 
