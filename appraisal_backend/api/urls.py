@@ -33,7 +33,7 @@ urlpatterns = [
     path("logout/", LogoutView.as_view()),
 
     #API ME
-    path("me/", MeView.as_view(), name="me"),
+    path("me/", MeView.as_view()),
 
     # FACULTY
     path("faculty/submit/", FacultySubmitAPI.as_view()),
