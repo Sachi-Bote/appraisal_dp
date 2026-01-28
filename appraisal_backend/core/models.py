@@ -46,12 +46,20 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     username = models.CharField(max_length=150, unique=True)
     role = models.CharField(max_length=20, choices=ROLE_CHOICES)
+    full_name = models.CharField(max_length=100, null=True, blank=True)
+    designation = models.CharField(max_length=50, null=True, blank=True)
     department = models.CharField(max_length=100, null=True, blank=True)
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
     is_superuser = models.BooleanField(default=False)  # 👈 ADD THIS
-
-    date_joined = models.DateTimeField(default=timezone.now)
+    date_joined = models.DateField(default=timezone.now)
+    mobile_number = models.CharField(max_length=15, null=True, blank=True)
+    email = models.EmailField(max_length=100, null=True, blank=True)
+    address = models.TextField(null=True, blank=True)
+    gradePay = models.CharField(max_length=50, null=True, blank=True)
+    promotion_designation = models.CharField(max_length=50, null=True, blank=True)
+    eligibility_date = models.DateField(null=True, blank=True)
+    assessment_period = models.DateField(max_length=50, null=True, blank=True)
 
     objects = UserManager()
 

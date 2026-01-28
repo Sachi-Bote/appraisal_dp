@@ -22,6 +22,12 @@ class RegisterSerializer(serializers.Serializer):
     designation = serializers.CharField(required=False)
     mobile = serializers.CharField(required=True)
     date_of_joining = serializers.DateField(required=True)
+    address = serializers.CharField(required=False)
+    gradePay = serializers.CharField(required=False)
+    promotion_designation = serializers.CharField(required=False)
+    eligibility_date = serializers.DateField(required=False)
+    assessment_period = serializers.DateField(required=False)
+
 
 
     @transaction.atomic
