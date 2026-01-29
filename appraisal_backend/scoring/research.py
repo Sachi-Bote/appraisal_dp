@@ -80,32 +80,46 @@ POINTS = {
 # CALCULATION LOGIC
 
 
+# scoring/research.py
+
 def calculate_research_score(payload: dict) -> dict:
     """
-    Input:
+    Expected input:
     {
-        "journal_papers": 2,
-        "book_international": 1,
-        "phd_awarded": 1,
-        "patent_national": 1,
-        "invited_lecture_national": 3
+        "entries": [
+            {"type": "journal_papers"},
+            {"type": "journal_papers"},
+            {"type": "book_international"},
+            {"type": "invited_lecture_national"}
+        ]
     }
     """
 
-    total = 0
+    entries = payload.get("entries", [])
+
     breakdown = {}
+    total = 0
 
-    for key, count in payload.items():
-        points_per_unit = POINTS.get(key, 0)
-        subtotal = count * points_per_unit
+    # 1️⃣ COUNT how many times each research type appears
+    for entry in entries:
+        activity_type = entry.get("type")
 
-        breakdown[key] = {
-            "count": count,
-            "points_per_unit": points_per_unit,
-            "score": subtotal
-        }
+        if activity_type not in POINTS:
+            continue  # ignore unsupported entries safely
 
-        total += subtotal
+        if activity_type not in breakdown:
+            breakdown[activity_type] = {
+                "count": 0,
+                "points_per_unit": POINTS[activity_type],
+                "score": 0
+            }
+
+        breakdown[activity_type]["count"] += 1
+
+    # 2️⃣ MULTIPLY count × points (THIS is your exact rule)
+    for activity_type, data in breakdown.items():
+        data["score"] = data["count"] * data["points_per_unit"]
+        total += data["score"]
 
     return {
         "breakdown": breakdown,

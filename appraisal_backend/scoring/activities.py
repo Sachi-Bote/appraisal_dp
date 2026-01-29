@@ -31,6 +31,35 @@ def calculate_sppu_activity_score(payload: dict) -> dict:
     }
 
 
+def calculate_student_feedback_score(feedback_entries: list) -> dict:
+    """
+    Input:
+    [
+      { "feedback_score": 18.5 },
+      { "feedback_score": 17.0 }
+    ]
+    """
+
+    if not feedback_entries:
+        return {
+            "total": 0,
+            "average": 0,
+            "count": 0
+        }
+
+    total = sum(float(e["feedback_score"]) for e in feedback_entries)
+    count = len(feedback_entries)
+    average = round(total / count, 2)
+
+    # PBAS allows max 25
+    final_score = min(round(total, 2), 25)
+
+    return {
+        "count": count,
+        "total": round(total, 2),
+        "average": average,
+        "score": final_score
+    }
 
 
 def calculate_departmental_activity_score(payload: list) -> dict:

@@ -116,17 +116,6 @@ class HODSubmitAPI(APIView):
             feedback_score=score_result["pbas"]["total"],
             total_score=score_result["total_score"]
         )
-        log_action(
-                request=request,
-                action="SUBMIT_APPRAISAL",
-                entity="Appraisal",
-                entity_id=appraisal.appraisal_id,
-                old_value=old_state,
-                new_value={
-                    "status": appraisal.status,
-                    "faculty_id": appraisal.faculty.pk
-                }
-            )
 
         log_action(
                 request=request,

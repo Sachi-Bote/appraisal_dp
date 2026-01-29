@@ -18,6 +18,7 @@ Expected payload example:
 
 from typing import Dict, Tuple
 from .global_rules import is_non_negative_int
+from scoring.research import POINTS
 
 
 # ============================================================
@@ -94,23 +95,27 @@ ALLOWED_KEYS = {
 # VALIDATION FUNCTION
 # ============================================================
 
-def validate_research_payload(payload: Dict) -> Tuple[bool, str]:
-
+def validate_research_payload(payload: dict):
     if not isinstance(payload, dict):
-        return False, "Research payload must be a JSON object."
+        return False, "research must be an object"
 
-    if not payload:
-        return False, "At least one research activity must be provided."
+    entries = payload.get("entries")
+    if not isinstance(entries, list):
+        return False, "research.entries must be a list"
 
-    for key, value in payload.items():
-        if key not in ALLOWED_KEYS:
-            return (
-                False,
-                f"Unknown research field '{key}'. "
-                f"Allowed fields: {sorted(ALLOWED_KEYS)}"
-            )
+    if len(entries) == 0:
+        return True, ""  # research is optional
 
-        if not is_non_negative_int(value):
-            return False, f"Research field '{key}' must be a non-negative integer."
+    for i, entry in enumerate(entries):
+        if not isinstance(entry, dict):
+            return False, f"Research entry {i+1} must be an object"
+
+        activity_type = entry.get("type")
+        if not activity_type:
+            return False, f"Research entry {i+1} missing 'type'"
+
+        if activity_type not in POINTS:
+            return False, f"Unknown research activity '{activity_type}'"
 
     return True, ""
+

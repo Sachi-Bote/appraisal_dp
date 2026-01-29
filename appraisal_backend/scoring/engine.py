@@ -9,7 +9,8 @@ from scoring.activities import (
     calculate_sppu_activity_score,
     calculate_departmental_activity_score,
     calculate_institute_activity_score,
-    calculate_society_activity_score
+    calculate_society_activity_score,
+    calculate_student_feedback_score
 )
 
 def calculate_full_score(payload: dict) -> dict:
@@ -25,6 +26,10 @@ def calculate_full_score(payload: dict) -> dict:
     # ✅ SPPU Activities (Yes / No)
     sppu_activity_result = calculate_sppu_activity_score(
         payload.get("activities", {})
+    )
+
+    feedback_result = calculate_student_feedback_score(
+    payload.get("pbas", {}).get("student_feedback", [])
     )
 
     # ✅ PBAS Departmental Activities
@@ -49,6 +54,7 @@ def calculate_full_score(payload: dict) -> dict:
     total_score = (
     teaching_result["score"]
     + sppu_activity_result["score"]
+    + feedback_result["score"]
     + pbas_departmental_result["total_awarded"]
     + pbas_institute_result["total_awarded"]
     + pbas_society_result["total_awarded"]
@@ -64,6 +70,7 @@ def calculate_full_score(payload: dict) -> dict:
             "course_count": aggregated["course_count"],
         },
         "activities": sppu_activity_result,
+        "student_feedback": feedback_result,
         "departmental_activities": pbas_departmental_result,
         "institute_activities": pbas_institute_result,
         "society_activities": pbas_society_result,

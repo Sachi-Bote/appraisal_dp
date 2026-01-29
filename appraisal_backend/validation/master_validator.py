@@ -96,6 +96,27 @@ def validate_full_form(payload: Dict, meta: Dict) -> Tuple[bool, str]:
                 return False, f"Missing credits_claimed in society activity #{idx}"
 
 
+        # ✅ ADD: PBAS Student Feedback validation
+    if meta.get("form_type") == "PBAS":
+        feedback_entries = payload.get("pbas", {}).get("student_feedback", [])
+
+        if not isinstance(feedback_entries, list):
+            return False, "Student feedback must be a list"
+
+        for idx, entry in enumerate(feedback_entries, start=1):
+            if "feedback_score" not in entry:
+                return False, f"Missing feedback_score in student_feedback #{idx}"
+
+            try:
+                score = float(entry["feedback_score"])
+            except (TypeError, ValueError):
+                return False, f"Invalid feedback_score in student_feedback #{idx}"
+
+            if score < 0 or score > 25:
+                return False, f"feedback_score must be between 0 and 25 in student_feedback #{idx}"
+
+    
+
     # ---------- RESEARCH ----------
     ok, err = validate_research_payload(payload["research"])
     if not ok:
