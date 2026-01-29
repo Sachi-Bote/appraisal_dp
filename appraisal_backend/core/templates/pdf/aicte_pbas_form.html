@@ -28,7 +28,7 @@ table {
 
 th, td {
     border: 1px solid #000;
-    padding: 4px;
+    padding: 2px;
     vertical-align: top;
 }
 
@@ -61,10 +61,11 @@ th, td {
 
 <table>
 <colgroup>
-  <col style="width:6%">
-  <col style="width:44%">
-  <col style="width:4%">
-  <col style="width:46%">
+  <col style="width:18mm">   <!-- Sr No -->
+  <col style="width:50mm">   <!-- Activity / Semester -->
+  <col style="width:40mm">   <!-- Criteria / Course -->
+  <col style="width:40mm">   <!-- Self -->
+  <col style="width:32mm">   <!-- Verified -->
 </colgroup>
 
 <tr><td>1</td><td>Name</td><td>:</td><td>{{ faculty.name }}</td></tr>
@@ -80,11 +81,11 @@ th, td {
 
 <table>
 <colgroup>
-  <col style="width:5%">
-  <col style="width:30%">
-  <col style="width:25%">
-  <col style="width:20%">
-  <col style="width:20%">
+  <col style="width:18mm">   <!-- Sr No -->
+  <col style="width:50mm">   <!-- Activity / Semester -->
+  <col style="width:40mm">   <!-- Criteria / Course -->
+  <col style="width:40mm">   <!-- Self -->
+  <col style="width:32mm">   <!-- Verified -->
 </colgroup>
 
 <tr>
@@ -95,52 +96,58 @@ th, td {
 <th>Verified</th>
 </tr>
 
-<!-- Teaching -->
+{% for row in pbas_teaching.rows %}
 <tr>
-<td class="center">1</td>
-<td class="small">
-Teaching (Classes taught / assigned × 100)
-</td>
-<td class="small">
-≥ 80% : Good<br>
-70–79% : Satisfactory<br>
-&lt; 70% : Not Satisfactory
-</td>
-<td class="small">
-Assigned : {{ teaching.total_assigned }}<br>
-Taught : {{ teaching.total_taught }}<br>
-Percentage : {{ teaching.percentage }}<br>
-<b>Grade : {{ teaching.grade }}</b>
-</td>
-<td class="center">{{ teaching.verified_grade|default:"-" }}</td>
+  <td>{{ forloop.counter }}</td>
+  <td>{{ row.semester }}</td>
+  <td>{{ row.course }}</td>
+  <td class="center">{{ row.scheduled }}</td>
+  <td class="center">{{ row.held }}</td>
+  <td class="center">{{ row.points }}</td>
+  <td>{{ row.enclosure }}</td>
 </tr>
-
-<!-- Activities -->
-<tr>
-<td class="center">2</td>
-<td class="small">
-Student / Research / Academic Activities
-</td>
-<td class="small">
-≥ 3 : Good<br>
-1–2 : Satisfactory<br>
-None : Not Satisfactory
-</td>
-<td class="small">
-{% if activities.list %}
-{% for a in activities.list %}
-{{ forloop.counter }}. {{ a }}<br>
 {% endfor %}
-{% else %}
--
-{% endif %}
-<br><b>Grade : {{ activities.grade }}</b>
-</td>
-<td class="center">{{ activities.verified_grade|default:"-" }}</td>
-</tr>
-</table>
 
-<div class="page-break"></div>
+<tr>
+  <td colspan="3"><b>Total</b></td>
+  <td class="center"><b>{{ pbas_teaching.total_scheduled }}</b></td>
+  <td class="center"><b>{{ pbas_teaching.total_held }}</b></td>
+  <td class="center"><b>{{ pbas_teaching.total_points }}</b></td>
+  <td></td>
+</tr>
+
+
+
+<!--Student Feedback-->
+{% for row in pbas_feedback.rows %}
+<tr>
+  <td>{{ forloop.counter }}</td>
+  <td>{{ row.semester }}</td>
+  <td>{{ row.course }}</td>
+  <td class="center">{{ row.average }}</td>
+  <td>{{ row.enclosure }}</td>
+</tr>
+{% endfor %}
+
+<tr>
+  <td colspan="3"><b>Total</b></td>
+  <td class="center"><b>{{ pbas_feedback.total }}</b></td>
+  <td></td>
+</tr>
+
+
+<!--Other Activities-->
+{% for row in pbas_activities.rows %}
+<tr>
+  <td>{{ forloop.counter }}</td>
+  <td>{{ row.semester }}</td>
+  <td>{{ row.activity }}</td>
+  <td class="center">{{ row.credit }}</td>
+  <td>{{ row.criteria }}</td>
+  <td>{{ row.enclosure }}</td>
+</tr>
+{% endfor %}
+
 
 <!-- ================= TABLE 2 ================= -->
 
@@ -148,11 +155,11 @@ None : Not Satisfactory
 
 <table>
 <colgroup>
-  <col style="width:5%">
-  <col style="width:55%">
-  <col style="width:15%">
-  <col style="width:12%">
-  <col style="width:13%">
+  <col style="width:18mm">   <!-- Sr No -->
+  <col style="width:50mm">   <!-- Activity / Semester -->
+  <col style="width:40mm">   <!-- Criteria / Course -->
+  <col style="width:40mm">   <!-- Self -->
+  <col style="width:32mm">   <!-- Verified -->
 </colgroup>
 
 <tr>
@@ -207,14 +214,23 @@ Assessment by the Principal / Head of Department
 
 <table>
 <colgroup>
-  <col style="width:75%">
-  <col style="width:25%">
+  <col style="width:18mm">   <!-- Sr No -->
+  <col style="width:50mm">   <!-- Activity / Semester -->
+  <col style="width:40mm">   <!-- Criteria / Course -->
+  <col style="width:40mm">   <!-- Self -->
+  <col style="width:32mm">   <!-- Verified -->
 </colgroup>
 
+<table>
+<colgroup>
+  <col style="width:130mm">
+  <col style="width:50mm">
+</colgroup>
 <tr>
 <th>Assessment Criteria</th>
 <th>Verified Grade</th>
 </tr>
+
 
 <tr>
 <td class="small">
@@ -244,11 +260,13 @@ Good in Teaching and Satisfactory/Good in Activities
 <br>
 
 <table style="border:none;">
+<colgroup>
+  <col style="width:90mm">
+  <col style="width:90mm">
+</colgroup>
 <tr>
-<td style="border:none;">
-<b>Signature (Principal)</b><br><br>
-Date : {{ signatures.principal_date|default:"-" }}
-</td>
+<td style="border:none;">Signature of HOD</td>
+<td style="border:none;">Signature of Teacher</td>
 </tr>
 </table>
 

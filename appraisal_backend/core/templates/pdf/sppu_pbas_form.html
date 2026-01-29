@@ -14,7 +14,6 @@ body {
     font-family: Arial, sans-serif;
     margin: 0;
     padding: 20mm 15mm;
-    box-sizing: border-box;
 }
 
 h2, h3, h4 {
@@ -30,9 +29,9 @@ table {
 
 th, td {
     border: 1px solid black;
-    padding: 6px;
+    padding: 2px;
     font-size: 14px;
-    vertical-align: middle;
+    vertical-align: top;
 }
 
 .center { text-align: center; }
@@ -49,7 +48,7 @@ table, tr, td, th {
 
 <body>
 
-<!-- ================= PAGE 1 ================= -->
+<!-- ================= HEADER ================= -->
 
 <h3>Savitribai Phule Pune University, Pune</h3>
 <h3>Modern Education Society’s</h3>
@@ -58,20 +57,37 @@ table, tr, td, th {
 <h2>PART ‘A’</h2>
 <h3>YEAR OF PERFORMANCE APPRAISAL : {{ period }}</h3>
 
-<div class="section-title">SECTION – A: GENERAL</div>
+<!-- ================= SECTION A ================= -->
+
+<h4>SECTION – A : GENERAL</h4>
 
 <table>
+<colgroup>
+  <col style="width:10mm">
+  <col style="width:60mm">
+  <col style="width:10mm">
+  <col style="width:100mm">
+</colgroup>
 <tr><td>1.</td><td>Name</td><td>:</td><td>{{ faculty.name }}</td></tr>
 <tr><td>2.</td><td>Designation</td><td>:</td><td>{{ faculty.designation }}</td></tr>
 <tr><td>3.</td><td>Name of the Department / Centre</td><td>:</td><td>{{ faculty.department }}</td></tr>
-<tr><td>4.</td><td>Email Telephone / Mobile number</td><td>:</td><td>{{ faculty.email }} / {{ faculty.mobile }}</td></tr>
+<tr><td>4.</td><td>Email / Mobile</td><td>:</td><td>{{ faculty.email }} / {{ faculty.mobile }}</td></tr>
 <tr><td>5.</td><td>Year of Performance Appraisal</td><td>:</td><td>{{ period }}</td></tr>
 </table>
 
-<div class="section-title">SECTION – B</div>
+<!-- ================= SECTION B – TABLE 1 ================= -->
+
 <h3>TABLE 1</h3>
 
 <table>
+<colgroup>
+  <col style="width:10mm">
+  <col style="width:60mm">
+  <col style="width:55mm">
+  <col style="width:45mm">
+  <col style="width:25mm">
+</colgroup>
+
 <tr>
     <th>Sr.</th>
     <th>Activity</th>
@@ -85,51 +101,62 @@ table, tr, td, th {
 <td class="center">1</td>
 <td>
 Teaching<br>
-(Number of classes taught / total classes assigned) × 100%
+(Number of classes taught / total classes assigned) × 100%<br>
+<b>(Includes tutorials, labs & related activities)</b>
 </td>
 <td>
-80% & above → <b>Good</b><br>
-70–80% → <b>Satisfactory</b><br>
-Below 70% → <b>Not satisfactory</b>
+80% & above : <b>Good</b><br>
+Below 80% but above 70% : <b>Satisfactory</b><br>
+Less than 70% : <b>Not satisfactory</b>
 </td>
 <td>
-<table style="width:100%; border:none;">
-<tr><td>Total Classes Assigned</td><td>{{ teaching.total_assigned }}</td></tr>
-<tr><td>No. of Classes Taught</td><td>{{ teaching.total_taught }}</td></tr>
-<tr><td>% of Classes Taught</td><td>{{ teaching.percentage }}</td></tr>
-<tr><td>Grade</td><td>{{ teaching.grade }}</td></tr>
-</table>
+<div>Total Classes Assigned : {{ teaching.total_assigned }}</div>
+<div>No. of Classes Taught : {{ teaching.total_taught }}</div>
+<div>% of Classes Taught : {{ teaching.percentage }}</div>
+<div><b>Grade : {{ teaching.grade }}</b></div>
 </td>
-<td>{{ teaching.verified_grade|default:"-" }}</td>
+<td class="center">{{ teaching.verified_grade|default:"-" }}</td>
 </tr>
 
 <!-- Activities -->
 <tr>
 <td class="center">2</td>
-<td>Involvement in student / research activities</td>
 <td>
-At least 3 → <b>Good</b><br>
-1–2 → <b>Satisfactory</b><br>
-None → <b>Not satisfactory</b>
+Involvement in university / college student related activities /
+research activities
+</td>
+<td>
+Involved in at least 3 activities : <b>Good</b><br>
+1–2 activities : <b>Satisfactory</b><br>
+Not involved : <b>Not satisfactory</b>
 </td>
 <td>
 {% for a in activities.list %}
 {{ forloop.counter }}. {{ a }}<br>
 {% endfor %}
 <br>
-<b>Grade:</b> {{ activities.grade }}
+<b>Grade : {{ activities.grade }}</b>
 </td>
-<td>{{ activities.verified_grade|default:"-" }}</td>
+<td class="center">{{ activities.verified_grade|default:"-" }}</td>
 </tr>
+
 </table>
 
 <div class="page-break"></div>
 
 <!-- ================= TABLE 2 ================= -->
 
-<h3 style="text-align:center;">TABLE 2</h3>
+<h3>TABLE 2</h3>
 
 <table>
+<colgroup>
+  <col style="width:15mm">
+  <col style="width:90mm">
+  <col style="width:30mm">
+  <col style="width:25mm">
+  <col style="width:25mm">
+</colgroup>
+
 <tr>
 <th>S.N.</th>
 <th>Academic / Research Activity</th>
@@ -139,11 +166,11 @@ None → <b>Not satisfactory</b>
 </tr>
 
 <tr>
-<td>1</td>
+<td class="center">1</td>
 <td>Research Papers (Journal + Conference)</td>
-<td>8 per paper</td>
-<td>{{ research.total }}</td>
-<td>{{ research.verified|default:"-" }}</td>
+<td class="center">8 per paper</td>
+<td class="center">{{ research.total }}</td>
+<td class="center">{{ research.verified|default:"-" }}</td>
 </tr>
 </table>
 
@@ -152,14 +179,18 @@ None → <b>Not satisfactory</b>
 <!-- ================= SIGNATURES ================= -->
 
 <table style="border:none;">
+<colgroup>
+  <col style="width:90mm">
+  <col style="width:90mm">
+</colgroup>
 <tr>
 <td style="border:none;">
 <b>Signature of HOD</b><br>
-Date: {{ signatures.hod_date|default:"-" }}
+Date : {{ signatures.hod_date|default:"-" }}
 </td>
 <td style="border:none; text-align:right;">
 <b>Signature of the Teacher</b><br>
-Date: {{ signatures.teacher_date|default:"-" }}
+Date : {{ signatures.teacher_date|default:"-" }}
 </td>
 </tr>
 </table>
@@ -168,20 +199,21 @@ Date: {{ signatures.teacher_date|default:"-" }}
 
 <!-- ================= PART B ================= -->
 
-<h2 style="text-align:center;">PART ‘B’</h2>
+<h2>PART ‘B’</h2>
 
 <p><b>Overall Grading for TABLE 1</b></p>
 
 <table>
+<colgroup>
+  <col style="width:130mm">
+  <col style="width:50mm">
+</colgroup>
 <tr>
 <th>Assessment Criteria</th>
-<th>Verified Grading</th>
+<th>Verified Grade</th>
 </tr>
-
 <tr>
-<td>
-Good in teaching and satisfactory or good in activities
-</td>
+<td>Good in teaching and satisfactory or good in activities</td>
 <td class="center">{{ scores.overall_grade }}</td>
 </tr>
 </table>
@@ -204,11 +236,13 @@ Good in teaching and satisfactory or good in activities
 <br><br>
 
 <table style="border:none;">
+<colgroup>
+  <col style="width:180mm">
+</colgroup>
 <tr>
-<td style="border:none; text-align:left;">
-<b>Signature</b><br>
-(Principal)<br>
-Date: {{ signatures.principal_date|default:"-" }}
+<td style="border:none;">
+<b>Signature (Principal)</b><br>
+Date : {{ signatures.principal_date|default:"-" }}
 </td>
 </tr>
 </table>

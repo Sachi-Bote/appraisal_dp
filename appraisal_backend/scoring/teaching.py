@@ -1,5 +1,6 @@
 # scoring/teaching.py
 from decimal import Decimal, ROUND_HALF_UP
+
 def calculate_teaching_percentage(classes_taught: int, total_classes: int) -> float:
     if total_classes == 0:
         return 0.0

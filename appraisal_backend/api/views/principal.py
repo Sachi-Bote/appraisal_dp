@@ -1,5 +1,5 @@
 
-from core.services.pdf.data_mapper import get_appraisal_pdf_data
+from core.services.pdf.data_mapper import get_common_pdf_data
 from core.services.pdf.html_pdf import generate_pdf_from_html
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -10,19 +10,11 @@ from core.models import Appraisal
 from workflow.states import States
 from workflow.engine import perform_action
 from core.models import ApprovalHistory
-
-from core.services.pdf.sppu_pbas import generate_sppu_pbas
-from core.services.pdf.aicte_pbas import generate_aicte_pbas
 from core.services.pdf.save import save_pdf
 from core.utils.audit import log_action
-
-from core.models import FacultyProfile
 from django.db import transaction
-from core.models import AppraisalScore
 from core.utils.audit import log_action
-from core.models import FacultyProfile
 from django.db import transaction
-from core.models import AppraisalScore
 
 
 class PrincipalApproveAPI(APIView):
@@ -196,7 +188,7 @@ class PrincipalFinalizeAPI(APIView):
         appraisal.status = new_state
         appraisal.save()
 
-        data = get_appraisal_pdf_data(appraisal)
+        data = get_common_pdf_data(appraisal)
 
         # 2️⃣ Generate SPPU PBAS PDF
         sppu_pdf = generate_pdf_from_html("pdf/sppu_pbas_form.html", data)

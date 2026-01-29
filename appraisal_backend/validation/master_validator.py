@@ -61,6 +61,40 @@ def validate_full_form(payload: Dict, meta: Dict) -> Tuple[bool, str]:
     ok, err = validate_activities(payload["activities"])
     if not ok:
         return False, f"Activities validation failed: {err}"
+    
+     # ✅ ADD: PBAS Departmental Activities validation
+    if meta.get("form_type") == "PBAS":
+        dept_acts = payload.get("pbas", {}).get("departmental_activities", [])
+
+        if not isinstance(dept_acts, list):
+            return False, "Departmental activities must be a list"
+
+        for idx, act in enumerate(dept_acts, start=1):
+            if "credits_claimed" not in act:
+                return False, f"Missing credits_claimed in departmental activity #{idx}"
+            
+    # ✅ ADD: PBAS Institute Activities validation
+    if meta.get("form_type") == "PBAS":
+        inst_acts = payload.get("pbas", {}).get("institute_activities", [])
+
+        if not isinstance(inst_acts, list):
+            return False, "Institute activities must be a list"
+
+        for idx, act in enumerate(inst_acts, start=1):
+            if "credits_claimed" not in act:
+                return False, f"Missing credits_claimed in institute activity #{idx}"
+            
+    # ✅ ADD: PBAS Society Activities validation
+    if meta.get("form_type") == "PBAS":
+        society_acts = payload.get("pbas", {}).get("society_activities", [])
+
+        if not isinstance(society_acts, list):
+            return False, "Society activities must be a list"
+
+        for idx, act in enumerate(society_acts, start=1):
+            if "credits_claimed" not in act:
+                return False, f"Missing credits_claimed in society activity #{idx}"
+
 
     # ---------- RESEARCH ----------
     ok, err = validate_research_payload(payload["research"])
