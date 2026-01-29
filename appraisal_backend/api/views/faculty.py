@@ -95,6 +95,24 @@ class FacultySubmitAPI(APIView):
 
         score_result = calculate_full_score(scoring_payload)
 
+        teaching_debug = score_result.get("teaching", {})
+
+        print("\n========== TEACHING DEBUG ==========")
+        print("Total classes assigned:", teaching_debug.get("total_scheduled"))
+        print("Classes taught:", teaching_debug.get("total_held"))
+        print("Percentage:", teaching_debug.get("percentage"))
+        print("Teaching score:", teaching_debug.get("score"))
+
+        # 🔍 DEBUG: Research calculation
+        research_debug = score_result.get("research", {})
+
+        print("\n========== RESEARCH DEBUG ==========")
+        for k, v in research_debug.get("breakdown", {}).items():
+            print(f"{k}: count={v['count']}, unit={v['points_per_unit']}, score={v['score']}")
+
+        print("Total research score:", research_debug.get("total"))
+        print("====================================\n")
+
 
         # 5️⃣ CREATE APPRAISAL (INITIAL STATE = DRAFT)
         appraisal = Appraisal.objects.create(
