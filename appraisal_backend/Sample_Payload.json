@@ -1,0 +1,122 @@
+{
+  "academic_year": "2024-25",
+  "semester": "Odd",
+  "form_type": "PBAS",
+
+  "appraisal_data": {
+    "submit_action": "submit",
+
+    "general": {
+      "faculty_name": "Dr ABC",
+      "department": "Computer Engineering",
+      "designation": "Assistant Professor"
+    },
+
+    "teaching": {
+      "courses": [
+        {
+          "semester": "1/2024-25",
+          "course_code": "CS101",
+          "course_name": "Data Structures",
+          "scheduled_classes": 48,
+          "held_classes": 45
+        },
+        {
+          "semester": "1/2024-25",
+          "course_code": "CS102",
+          "course_name": "Algorithms",
+          "scheduled_classes": 56,
+          "held_classes": 52
+        }
+      ]
+    },
+
+    "activities": {
+      "administrative_responsibility": true,
+      "exam_duties": true,
+      "student_related": false,
+      "organizing_events": true,
+      "phd_guidance": false,
+      "research_project": false,
+      "sponsored_project": false
+    },
+
+    "research": {
+      "entries": [
+        {
+          "type": "journal_papers",
+          "count": 2,
+          "title": "Efficient Graph Algorithms",
+          "year": 2024,
+          "enclosure_no": "R1"
+        },
+        {
+          "type": "book_national",
+          "count": 1,
+          "title": "Computer Networks",
+          "year": 2023,
+          "enclosure_no": "R2"
+        },
+        {
+          "type": "invited_lecture_national",
+          "count": 1,
+          "year": 2024,
+          "enclosure_no": "R3"
+        }
+      ]
+    },
+
+    "pbas": {
+      
+      "student_feedback": [
+        {
+          "semester": "1/2024-25",
+          "course_code": "CS301",
+          "course_name": "Data Structures",
+          "feedback_score": 18.5,
+          "enclosure_no": "FB1"
+        },
+        {
+          "semester": "2/2024-25",
+          "course_code": "CS401",
+          "course_name": "Operating Systems",
+          "feedback_score": 17.0,
+          "enclosure_no": "FB2"
+        }
+      ],
+      
+      "departmental_activities": [
+        {
+          "activity": "NBA Coordinator",
+          "semester": "1/2024-25",
+          "credits_claimed": 3,
+          "enclosure_no": "D1"
+        }
+      ],
+
+      "institute_activities": [
+        {
+          "activity": "Institute Website Management",
+          "semester": "1/2024-25",
+          "credits_claimed": 4,
+          "enclosure_no": "I1"
+        }
+      ],
+
+      "society_activities": [
+        {
+          "activity": "Blood Donation Activity",
+          "semester": "2/2024-25",
+          "credits_claimed": 5,
+          "enclosure_no": "S1"
+        }
+      ],
+          "teaching_process": 18,
+      "feedback": 17,
+      "department": 14,
+      "institute": 8,
+      "acr": 9,
+      "society": 6
+    }
+  }
+}

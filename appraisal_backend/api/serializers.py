@@ -1,11 +1,14 @@
 from rest_framework import serializers
 from django.contrib.auth import authenticate
-from core.models import HODProfile, PrincipalProfile, User, FacultyProfile
 from core.models import Appraisal
 from django.db import transaction
-from rest_framework import serializers
-from core.models import Department
-
+from core.models import(
+    Department,
+    HODProfile, 
+    PrincipalProfile, 
+    User, 
+    FacultyProfile
+)
 
 
 class RegisterSerializer(serializers.Serializer):
@@ -19,14 +22,14 @@ class RegisterSerializer(serializers.Serializer):
 
     # 👤 Profile fields
     full_name = serializers.CharField(required=True)
-    designation = serializers.CharField(required=False)
+    designation = serializers.CharField(required=True)
     mobile = serializers.CharField(required=True)
     date_of_joining = serializers.DateField(required=True)
-    address = serializers.CharField(required=False)
-    gradePay = serializers.CharField(required=False)
-    promotion_designation = serializers.CharField(required=False)
-    eligibility_date = serializers.DateField(required=False)
-    assessment_period = serializers.DateField(required=False)
+    address = serializers.CharField(required=True)
+    gradePay = serializers.CharField(required=False, allow_blank = True)
+    promotion_designation = serializers.CharField(required=False, allow_blank = True)
+    eligibility_date = serializers.DateField(required=False, allow_null = True)
+    assessment_period = serializers.DateField(required=False,allow_null = True)
 
 
 
@@ -71,7 +74,12 @@ class RegisterSerializer(serializers.Serializer):
             username=validated_data["email"],
             password=validated_data["password"],
             role=role,
-            department=department
+            department=department,
+            full_name = validated_data["full_name"],
+            designation=validated_data.get("designation"),
+            date_of_joining=validated_data.get("date_of_joining"),
+            email=validated_data["email"],
+            mobile = validated_data["mobile"]
         )
 
         if role == "FACULTY":
