@@ -7,45 +7,41 @@ def calculate_teaching_percentage(classes_taught: int, total_classes: int) -> fl
     return (classes_taught / total_classes) * 100
 
 
-def calculate_teaching_grade(percentage: float) -> str:
-    if percentage >= 80:
-        return "Good"
-    elif percentage >= 70:
-        return "Satisfactory"
+SPPU_ATTENDANCE_SCORE_MAP = {
+    "Good": 10,
+    "Satisfactory": 7,
+    "Not Satisfactory": 0
+}
+
+
+def calculate_sppu_teaching_score(
+    total_scheduled_classes: int,
+    total_held_classes: int
+) -> dict:
+    if total_scheduled_classes <= 0:
+        return {
+            "attendance_percentage": Decimal("0.00"),
+            "rating": "Not Satisfactory"
+        }
+
+    attendance_percentage = (
+        Decimal(total_held_classes)
+        / Decimal(total_scheduled_classes)
+        * Decimal("100")
+    ).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+
+    if attendance_percentage >= Decimal("80.00"):
+        rating = "Good"
+    elif attendance_percentage >= Decimal("70.00"):
+        rating = "Satisfactory"
     else:
-        return "Not Satisfactory"
-
-
-def calculate_teaching_score(payload: dict) -> dict:
-    """
-    Input:
-    {
-        "total_classes_assigned": 100,
-        "classes_taught": 90
-    }
-    Output:
-    {
-        "percentage": 90.0,
-        "grade": "Good",
-        "score": 10   # example scoring weight
-    }
-    """
-
-    total_classes = payload["total_classes_assigned"]
-    taught = payload["classes_taught"]
-
-    percentage = calculate_teaching_percentage(taught, total_classes)
-    grade = calculate_teaching_grade(percentage)
-
-    # Default score-mapping (you can adjust to actual SPPU rule)
-    score_map = {"Good": 10, "Satisfactory": 5, "Not Satisfactory": 0}
-    score = score_map[grade]
+        rating = "Not Satisfactory"
 
     return {
-        "percentage": percentage,
-        "grade": grade,
-        "score": score,
+        "attendance_percentage": attendance_percentage,
+        "rating": rating
     }
+
 
 
 def aggregate_teaching_blocks(blocks: list[dict]) -> dict:

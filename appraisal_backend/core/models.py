@@ -2,6 +2,7 @@ from django.db import models
 from django.utils import timezone
 from django.contrib.auth.hashers import make_password, check_password
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, BaseUserManager
+from decimal import Decimal
 
 
 class UserManager(BaseUserManager):
@@ -301,7 +302,11 @@ class AppraisalScore(models.Model):
     research_score = models.DecimalField(max_digits=6, decimal_places=2, null=True)
     activity_score = models.DecimalField(max_digits=6, decimal_places=2, null=True)
     feedback_score = models.DecimalField(max_digits=6, decimal_places=2, null=True)
-
+    acr_score = models.DecimalField(        # ✅ ADD THIS
+        max_digits=4,
+        decimal_places=2,
+        default=Decimal("0.00")
+    )
     total_score = models.DecimalField(max_digits=6, decimal_places=2, null=True)
     calculated_at = models.DateTimeField(default=timezone.now)
 

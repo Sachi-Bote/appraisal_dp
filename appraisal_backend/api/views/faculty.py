@@ -75,9 +75,20 @@ class FacultySubmitAPI(APIView):
             "activities": payload.get("activities", {}),
             "research": payload.get("research", {}),
             "pbas": payload.get("pbas", {}),
+            "acr": {
+            "grade": payload["acr"]["grade"]
+            }
         }
 
         required_sections = ["teaching", "activities", "research", "pbas"]
+
+        acr_data = scoring_payload.get("acr")
+
+        if not acr_data or "grade" not in acr_data:
+            return Response(
+                {"error": "ACR grade is required"},
+                status=400
+            )
         missing = [s for s in required_sections if s not in scoring_payload]
 
         if missing:
@@ -146,7 +157,8 @@ class FacultySubmitAPI(APIView):
             research_score=score_result["research"]["total"],
             activity_score=score_result["activities"]["score"],
             feedback_score=score_result["pbas"]["total"],
-            total_score=score_result["total_score"]
+            total_score=score_result["total_score"],
+            acr_score = score_result["acr"]["credit_point"]
         )
 
         log_action(

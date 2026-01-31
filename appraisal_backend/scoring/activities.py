@@ -211,3 +211,24 @@ def calculate_society_activity_score(payload: list) -> dict:
         "total_awarded": total_awarded,
         "max_credit": MAX_CREDIT
     }
+
+
+from decimal import Decimal
+
+ACR_GRADE_SCORE_MAP = {
+    "A+": Decimal("10"),
+    "A": Decimal("8"),
+    "B": Decimal("6"),
+    "C": Decimal("4"),
+}
+
+
+
+def calculate_institute_acr_score(grade: str) -> dict:
+    grade = grade.strip().upper()
+
+    return {
+        "activity": "ACR",
+        "grade": grade,
+        "credit_point": ACR_GRADE_SCORE_MAP.get(grade, Decimal("0")),
+    }

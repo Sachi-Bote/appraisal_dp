@@ -1,10 +1,11 @@
 from scoring.pbas import calculate_pbas_score
 from scoring.research import calculate_research_score
-from scoring.teaching import (
-    calculate_teaching_score,          # SPPU (unchanged)
+from scoring.teaching import (          # SPPU (unchanged)
     aggregate_teaching_blocks,
-    calculate_pbas_teaching_score
+    calculate_pbas_teaching_score,
+    SPPU_ATTENDANCE_SCORE_MAP
 )
+from decimal import Decimal, ROUND_HALF_UP
 from scoring.activities import (
     calculate_sppu_activity_score,
     calculate_departmental_activity_score,
@@ -12,8 +13,15 @@ from scoring.activities import (
     calculate_society_activity_score,
     calculate_student_feedback_score
 )
+from scoring.teaching import(
+    calculate_sppu_teaching_score
+)
+from scoring.activities import calculate_institute_acr_score
 
 def calculate_full_score(payload: dict) -> dict:
+    
+
+
     # ✅ PBAS Teaching
     teaching_blocks = payload.get("teaching", {}).get("courses", [])
     aggregated = aggregate_teaching_blocks(teaching_blocks)
@@ -22,6 +30,18 @@ def calculate_full_score(payload: dict) -> dict:
         total_scheduled_classes=aggregated["total_scheduled"],
         total_held_classes=aggregated["total_held"],
     )
+
+    teaching_result_sppu = calculate_sppu_teaching_score(
+        total_scheduled_classes=aggregated["total_scheduled"],
+        total_held_classes=aggregated["total_held"],
+    )
+
+    teaching_sppu_score = Decimal(
+    SPPU_ATTENDANCE_SCORE_MAP.get(
+        teaching_result_sppu["rating"],
+        0
+    )
+)
 
     # ✅ SPPU Activities (Yes / No)
     sppu_activity_result = calculate_sppu_activity_score(
@@ -46,6 +66,11 @@ def calculate_full_score(payload: dict) -> dict:
     payload.get("pbas", {}).get("society_activities", [])
     )
 
+    acr_result = calculate_institute_acr_score(
+    payload["acr"]["grade"]
+)
+
+
     # ✅ Other sections
     research_result = calculate_research_score(payload.get("research", {}))
     pbas_result = calculate_pbas_score(payload.get("pbas", {}))
@@ -60,6 +85,7 @@ def calculate_full_score(payload: dict) -> dict:
     + pbas_society_result["total_awarded"]
     + research_result["total"]
     + pbas_result["total"]
+    + acr_result["credit_point"]
 )
 
     return {
@@ -77,5 +103,6 @@ def calculate_full_score(payload: dict) -> dict:
         "research": research_result,
         "pbas": pbas_result,
         "total_score": total_score,
+        "acr" : acr_result,
     }
 
