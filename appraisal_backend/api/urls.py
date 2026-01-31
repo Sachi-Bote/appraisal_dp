@@ -22,6 +22,7 @@ from api.views.principal import(
     PrincipalFinalizeAPI,
 )
 from api.views.me import MeView 
+from api.views.appraisal_views import CurrentFacultyAppraisalAPIView
 
 
 urlpatterns = [
@@ -34,6 +35,9 @@ urlpatterns = [
 
     #API ME
     path("me/", MeView.as_view()),
+
+    #Appraisal
+    path("appraisal/current/", CurrentFacultyAppraisalAPIView.as_view()),
 
     # FACULTY
     path("faculty/submit/", FacultySubmitAPI.as_view()),
