@@ -45,37 +45,12 @@ def calculate_sppu_teaching_score(
 
 
 def aggregate_teaching_blocks(blocks: list[dict]) -> dict:
-    """
-    Input (from frontend):
-    [
-        {
-            "semester": "1/2024-25",
-            "course_code": "CS101",
-            "scheduled_classes": 40,
-            "held_classes": 38
-        },
-        {
-            "semester": "1/2024-25",
-            "course_code": "CS102",
-            "scheduled_classes": 44,
-            "held_classes": 42
-        }
-    ]
-
-    Output:
-    {
-        "course_count": 2,
-        "total_scheduled": 84,
-        "total_held": 80
-    }
-    """
-
     total_scheduled = 0
     total_held = 0
 
     for block in blocks:
-        total_scheduled += int(block.get("scheduled_classes", 0))
-        total_held += int(block.get("held_classes", 0))
+        total_scheduled += int(block.get("total_classes_assigned", 0))
+        total_held += int(block.get("classes_taught", 0))
 
     return {
         "course_count": len(blocks),

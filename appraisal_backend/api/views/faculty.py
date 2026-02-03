@@ -18,7 +18,10 @@ class FacultySubmitAPI(APIView):
     permission_classes = [IsAuthenticated, IsFaculty]
 
     @transaction.atomic
+    
+
     def post(self, request):
+        print("📥 FULL REQUEST DATA:", request.data)    
         user = request.user
         # 1️⃣ Faculty profile
         try:
@@ -54,7 +57,11 @@ class FacultySubmitAPI(APIView):
         # 2️⃣ VALIDATION
         ok, err = validate_full_form(payload, meta)
         if not ok:
+            print("❌ validate_full_form failed:", err)
+            print("📦 Payload received:", payload)
+            print("🧾 Meta received:", meta)
             return Response({"error": err}, status=400)
+
 
         # 3️⃣ DUPLICATE CHECK
         if Appraisal.objects.filter(
