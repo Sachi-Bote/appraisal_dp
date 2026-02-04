@@ -216,7 +216,6 @@ class Appraisal(models.Model):
     semester = models.CharField(max_length=10)
     is_hod_appraisal = models.BooleanField(default=False)
     appraisal_data = models.JSONField()
-
     status = models.CharField(
         max_length=30,
         choices=STATUS_CHOICES,
