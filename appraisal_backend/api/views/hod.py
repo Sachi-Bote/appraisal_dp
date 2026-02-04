@@ -22,68 +22,34 @@ class HODSubmitAPI(APIView):
     def post(self, request):
         user = request.user
 
-        # 1️⃣ HOD must have FacultyProfile
         try:
             faculty = FacultyProfile.objects.select_related("department").get(user=user)
         except FacultyProfile.DoesNotExist:
-            return Response(
-                {"error": "Faculty profile not found for HOD"},
-                status=400
-            )
+            return Response({"error": "Faculty profile not found for HOD"}, status=400)
 
         meta = request.data
         payload = request.data.get("appraisal_data")
 
         if not payload:
-            return Response(
-                {"error": "appraisal_data is required"},
-                status=400
-            )
-        def validate_full_form(payload, meta):
-            general = payload.get("general", {})
+            return Response({"error": "appraisal_data is required"}, status=400)
 
-            required_general_fields = [
-                "faculty_name",
-                "department",
-                "designation"
-            ]
-
-            missing = [k for k in required_general_fields if k not in general]
-            if missing:
-                return False, f"Missing general fields: {missing}"
-
-            required_meta_fields = [
-                "academic_year",
-                "semester",
-                "form_type"
-            ]
-
-            missing_meta = [k for k in required_meta_fields if k not in meta]
-            if missing_meta:
-                return False, f"Missing meta fields: {missing_meta}"
-
-            return True, None
-# 2️⃣ VALIDATION
+        # ✅ USE CENTRAL VALIDATOR
         ok, err = validate_full_form(payload, meta)
         if not ok:
             return Response({"error": err}, status=400)
 
-        # 3️⃣ DUPLICATE CHECK
+        # ✅ CORRECT DUPLICATE CHECK
         if Appraisal.objects.filter(
             faculty=faculty,
             academic_year=meta["academic_year"],
             semester=meta["semester"],
-            form_type=meta["form_type"]
+            form_type=meta["form_type"],
+            is_hod_appraisal=True
         ).exists():
-            return Response(
-                {"error": "Appraisal already exists for this period"},
-                status=400
-            )
+            return Response({"error": "HOD appraisal already exists"}, status=400)
 
-        # 4️⃣ SCORING
         score_result = calculate_full_score(payload)
 
-        # 5️⃣ CREATE APPRAISAL (MARK AS HOD)
         appraisal = Appraisal.objects.create(
             faculty=faculty,
             form_type=meta["form_type"],
@@ -95,11 +61,8 @@ class HODSubmitAPI(APIView):
             principal=User.objects.filter(role="PRINCIPAL").first()
         )
 
-        old_state = {
-            "status": appraisal.status
-        }
+        old_state = {"status": appraisal.status}
 
-        # 6️⃣ WORKFLOW → SUBMIT
         appraisal.status = perform_action(
             current_state=appraisal.status,
             next_state=States.SUBMITTED,
@@ -107,7 +70,6 @@ class HODSubmitAPI(APIView):
         )
         appraisal.save()
 
-        # 7️⃣ CREATE SCORE
         AppraisalScore.objects.create(
             appraisal=appraisal,
             teaching_score=score_result["teaching"]["score"],
@@ -118,16 +80,13 @@ class HODSubmitAPI(APIView):
         )
 
         log_action(
-                request=request,
-                action="SUBMIT_APPRAISAL",
-                entity="Appraisal",
-                entity_id=appraisal.appraisal_id,
-                old_value=old_state,
-                new_value={
-                    "status": appraisal.status,
-                    "faculty_id": appraisal.faculty.pk
-                }
-            )
+            request=request,
+            action="SUBMIT_APPRAISAL",
+            entity="Appraisal",
+            entity_id=appraisal.appraisal_id,
+            old_value=old_state,
+            new_value={"status": appraisal.status}
+        )
 
         return Response(
             {
@@ -138,6 +97,7 @@ class HODSubmitAPI(APIView):
             },
             status=201
         )
+
     
 
 
@@ -273,22 +233,30 @@ class HODAppraisalList(APIView):
                 status=400
             )
 
-        appraisals = Appraisal.objects.filter(
+        appraisals = Appraisal.objects.select_related(
+            "faculty", "faculty__department"
+        ).filter(
             faculty__department=department,
             is_hod_appraisal=False,
-            status__in=[States.SUBMITTED, States.REVIEWED_BY_HOD]
-        )
+            status__in=[States.SUBMITTED, States.REVIEWED_BY_HOD, States.HOD_APPROVED]
+        ).order_by("-updated_at")
 
         return Response([
             {
-                "appraisal_id": a.appraisal_id,
-                "faculty_id": a.faculty.faculty_id,
+                "appraisal_id": a.appraisal_id,          # ✅ REQUIRED
                 "academic_year": a.academic_year,
                 "semester": a.semester,
                 "status": a.status,
+
+                # ✅ REQUIRED FOR UI
+                "faculty_name": a.faculty.full_name,
+                "designation": a.faculty.designation,
+                "department": a.faculty.department.department_name,
             }
             for a in appraisals
         ])
+
+
 
 
 # =========================

@@ -63,20 +63,44 @@ class PrincipalAppraisalList(APIView):
     permission_classes = [IsAuthenticated, IsPrincipal]
 
     def get(self, request):
-        appraisals = Appraisal.objects.filter(
-            status__in=[States.SUBMITTED, States.HOD_APPROVED, States.REVIEWED_BY_PRINCIPAL]
+        appraisals = (
+            Appraisal.objects
+            .filter(
+                status__in=[
+                    States.SUBMITTED,
+                    States.HOD_APPROVED,
+                    States.REVIEWED_BY_PRINCIPAL,
+                    States.PRINCIPAL_APPROVED,
+                    States.FINALIZED,
+                ]
+            )
+            .select_related("faculty__user")
+            .order_by("-updated_at")
         )
 
-        return Response([
-            {
-                "appraisal_id": a.appraisal_id,
-                "faculty_id": a.faculty.faculty_id,
+        response_data = []
+
+        for a in appraisals:
+            faculty = a.faculty
+            user = faculty.user if faculty else None
+
+            response_data.append({
+                "id": a.appraisal_id,
+
+                # ✅ FACULTY DETAILS
+                "faculty_name": faculty.full_name if faculty else None,
+                "designation": faculty.designation if faculty else None,
+                "department": user.department if user else None,
+
+                # ✅ APPRAISAL DETAILS
                 "academic_year": a.academic_year,
                 "semester": a.semester,
                 "status": a.status,
-            }
-            for a in appraisals
-        ])
+                "remarks": a.remarks,
+            })
+
+        return Response(response_data)
+
 
 class PrincipalStartReviewAPI(APIView):
     permission_classes = [IsAuthenticated, IsPrincipal]
