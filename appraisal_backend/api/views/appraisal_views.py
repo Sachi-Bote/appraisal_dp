@@ -3,7 +3,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 
 from core.models import Appraisal
-from api.permissions import IsFaculty
+from api.permissions import IsFaculty, IsHOD
 from workflow.states import States
 
 
@@ -11,37 +11,67 @@ class CurrentFacultyAppraisalAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        faculty = request.user.faculty_profile
+        faculty = getattr(request.user, 'faculty_profile', None) or getattr(request.user, 'facultyprofile', None)
+        
+        if not faculty:
+            return Response({"error": "Faculty profile not found"}, status=400)
 
+        is_hod = request.query_params.get("is_hod") == "true"
+
+        from django.db.models import Case, When, Value, IntegerField
+        
         appraisal = (
             Appraisal.objects
             .filter(
                 faculty=faculty,
-                status="DRAFT"
+                status__in=[
+                    States.DRAFT,
+                    States.RETURNED_BY_HOD,
+                    States.RETURNED_BY_PRINCIPAL,
+                ],
+                is_hod_appraisal=is_hod
             )
-            .select_related("formdata", "score")
+            .order_by(
+                Case(
+                    When(status=States.RETURNED_BY_HOD, then=Value(0)),
+                    When(status=States.RETURNED_BY_PRINCIPAL, then=Value(1)),
+                    When(status=States.DRAFT, then=Value(2)),
+                    default=Value(3),
+                    output_field=IntegerField()
+                ),
+                '-updated_at'
+            )
             .first()
         )
 
         if not appraisal:
             return Response({}, status=200)
 
-        return Response({
+        data = {
+            "id": appraisal.appraisal_id,
             "status": appraisal.status,
-            "form_payload": appraisal.formdata.form_payload,
-            "scores": {
-                "teaching_percentage": appraisal.score.teaching_percentage,
-                "research_score": appraisal.score.research_score,
-                "total_score": appraisal.score.total_score
-            }
-        })
+            "academic_year": appraisal.academic_year,
+            "semester": appraisal.semester,
+            "form_type": appraisal.form_type,
+            "appraisal_data": appraisal.appraisal_data,
+            "remarks": appraisal.remarks
+        }
+        return Response(data)
 
 
 class FacultyAppraisalStatusAPI(APIView):
-    permission_classes = [IsAuthenticated, IsFaculty]
+    permission_classes = [IsAuthenticated, IsFaculty | IsHOD]
 
     def get(self, request):
-        faculty = request.user.facultyprofile
+        try:
+            faculty = request.user.facultyprofile
+        except:
+             # Fallback for HOD who might not have a facultyprofile named exactly like that
+             # though FacultyProfile objects usually use faculty_profile related_name
+             faculty = getattr(request.user, 'facultyprofile', None) or getattr(request.user, 'faculty_profile', None)
+             
+        if not faculty:
+            return Response({"error": "Faculty profile not found"}, status=404)
 
         appraisals = Appraisal.objects.filter(
             faculty=faculty
@@ -106,3 +136,44 @@ class FacultyAppraisalStatusAPI(APIView):
         if state in [States.HOD_APPROVED, States.REVIEWED_BY_PRINCIPAL]:
             return "Principal"
         return "—"
+
+
+class AppraisalDetailAPI(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, appraisal_id):
+        try:
+            appraisal = Appraisal.objects.select_related("faculty__department").get(appraisal_id=appraisal_id)
+        except Appraisal.DoesNotExist:
+            return Response({"error": "Appraisal not found"}, status=404)
+
+        # Basic permission check
+        is_owner = appraisal.faculty.user == request.user
+        is_principal = request.user.role == "PRINCIPAL"
+        
+        is_hod = False
+        if request.user.role == "HOD":
+            from core.models import Department
+            try:
+                dept = Department.objects.get(hod=request.user)
+                if appraisal.faculty.department == dept:
+                    is_hod = True
+            except Department.DoesNotExist:
+                pass
+
+        if not (is_owner or is_principal or is_hod):
+            return Response({"error": "Unauthorized access"}, status=403)
+
+        return Response({
+            "id": appraisal.appraisal_id,
+            "status": appraisal.status,
+            "academic_year": appraisal.academic_year,
+            "semester": appraisal.semester,
+            "appraisal_data": appraisal.appraisal_data,
+            "remarks": appraisal.remarks,
+            "faculty": {
+                "name": appraisal.faculty.full_name,
+                "department": appraisal.faculty.department.department_name,
+                "designation": appraisal.faculty.designation
+            }
+        })

@@ -21,7 +21,7 @@ class FacultySubmitAPI(APIView):
     
 
     def post(self, request):
-        print("📥 FULL REQUEST DATA:", request.data)    
+        print("FULL REQUEST DATA:", request.data)    
         user = request.user
         # 1️⃣ Faculty profile
         try:
@@ -37,9 +37,10 @@ class FacultySubmitAPI(APIView):
 
         if not faculty.department.hod:
             return Response(
-                {"error": "No HOD assigned to your department"},
+                {"error": f"No HOD assigned to department '{faculty.department.department_name}'. Please ensure your HOD is registered and assigned."},
                 status=400
             )
+
 
         meta = request.data
         payload = request.data.get("appraisal_data")
@@ -57,138 +58,129 @@ class FacultySubmitAPI(APIView):
         # 2️⃣ VALIDATION
         ok, err = validate_full_form(payload, meta)
         if not ok:
-            print("❌ validate_full_form failed:", err)
-            print("📦 Payload received:", payload)
-            print("🧾 Meta received:", meta)
+            print("validate_full_form failed:", err)
+            print("Payload received:", payload)
+            print("Meta received:", meta)
             return Response({"error": err}, status=400)
 
 
-        # 3️⃣ DUPLICATE CHECK
-        if Appraisal.objects.filter(
+        # 3️⃣ DUPLICATE CHECK / DRAFT UPDATE
+        existing_appraisal = Appraisal.objects.filter(
             faculty=faculty,
-            academic_year = meta["academic_year"],
-            semester = meta["semester"],
-            form_type = meta["form_type"]
-        ).exists():
-            return Response(
-                {"error": "Appraisal already exists for this period"},
-                status=400
-            )
-
-        # 4️⃣ SCORING
-
-        scoring_payload = {
-            "teaching": payload.get("teaching", {}),
-            "activities": payload.get("activities", {}),
-            "research": payload.get("research", {}),
-            "pbas": payload.get("pbas", {}),
-            "acr": {
-            "grade": payload["acr"]["grade"]
-            }
-        }
-
-        required_sections = ["teaching", "activities", "research", "pbas"]
-
-        acr_data = scoring_payload.get("acr")
-
-        if not acr_data or "grade" not in acr_data:
-            return Response(
-                {"error": "ACR grade is required"},
-                status=400
-            )
-        missing = [s for s in required_sections if s not in scoring_payload]
-
-        if missing:
-            return Response(
-                {"error": f"Missing appraisal sections: {missing}"},
-                status=400
-            )
-
-        # ✅ PBAS Teaching requires courses
-        if "courses" not in scoring_payload["teaching"]:
-            return Response(
-                {"error": "Teaching courses data is missing"},
-                status=400
-            )
-
-        score_result = calculate_full_score(scoring_payload)
-
-        teaching_debug = score_result.get("teaching", {})
-
-        print("\n========== TEACHING DEBUG ==========")
-        print("Total classes assigned:", teaching_debug.get("total_scheduled"))
-        print("Classes taught:", teaching_debug.get("total_held"))
-        print("Percentage:", teaching_debug.get("percentage"))
-        print("Teaching score:", teaching_debug.get("score"))
-
-        # 🔍 DEBUG: Research calculation
-        research_debug = score_result.get("research", {})
-
-        print("\n========== RESEARCH DEBUG ==========")
-        for k, v in research_debug.get("breakdown", {}).items():
-            print(f"{k}: count={v['count']}, unit={v['points_per_unit']}, score={v['score']}")
-
-        print("Total research score:", research_debug.get("total"))
-        print("====================================\n")
-
-
-        # 5️⃣ CREATE APPRAISAL (INITIAL STATE = DRAFT)
-        appraisal = Appraisal.objects.create(
-            faculty=faculty,
-            form_type=meta["form_type"],
             academic_year=meta["academic_year"],
             semester=meta["semester"],
-            appraisal_data=payload,
-            status=States.DRAFT,
-            is_hod_appraisal = False
-        )
+            form_type=meta["form_type"]
+        ).first()
 
-        # 6️⃣ WORKFLOW: FACULTY SUBMIT
-        new_state = perform_action(
-            current_state=appraisal.status,
-            next_state=States.SUBMITTED
-        )
-        old_state = {
-            "status": appraisal.status
-        }
-        appraisal.status = new_state
-
-        # 7️⃣ ASSIGN HOD
-        appraisal.hod = faculty.department.hod
-        appraisal.save()
-
-        # 8️⃣ CREATE SCORE
-        AppraisalScore.objects.create(
-            appraisal=appraisal,
-            teaching_score=score_result["teaching"]["score"],
-            research_score=score_result["research"]["total"],
-            activity_score=score_result["activities"]["score"],
-            feedback_score=score_result["pbas"]["total"],
-            total_score=score_result["total_score"],
-            acr_score = score_result["acr"]["credit_point"]
-        )
-
-        log_action(
-                request=request,
-                action="SUBMIT_APPRAISAL",
-                entity="Appraisal",
-                entity_id=appraisal.appraisal_id,
-                old_value=old_state,
-                new_value={
-                    "status": appraisal.status,
-                    "faculty_id": faculty.pk
-                }
+        if existing_appraisal:
+            if existing_appraisal.status != States.DRAFT:
+                return Response(
+                    {"error": "Appraisal already exists and is submitted/finalized for this period"},
+                    status=400
+                )
+            # Update existing draft
+            appraisal = existing_appraisal
+            appraisal.appraisal_data = payload
+            appraisal.save()
+        else:
+            # 5️⃣ CREATE APPRAISAL (INITIAL STATE = DRAFT)
+            appraisal = Appraisal.objects.create(
+                faculty=faculty,
+                form_type=meta["form_type"],
+                academic_year=meta["academic_year"],
+                semester=meta["semester"],
+                appraisal_data=payload,
+                status=States.DRAFT,
+                is_hod_appraisal=False
             )
 
-        return Response(
-            {
-                "message": "Appraisal submitted successfully",
-                "appraisal_id": appraisal.appraisal_id,
-                "current_state": appraisal.status,
-                "total_score": score_result["total_score"]
-            },
-            status=201
-        )
+        submit_action = payload.get("submit_action", "submit").lower()
+
+        if submit_action == "submit":
+            # 4️⃣ SCORING (Only for submission)
+            scoring_payload = {
+                "teaching": payload.get("teaching", {}),
+                "activities": payload.get("activities", {}),
+                "research": payload.get("research", {}),
+                "pbas": payload.get("pbas", {}),
+                "acr": {
+                    "grade": payload["acr"]["grade"]
+                }
+            }
+
+            required_sections = ["teaching", "activities", "research", "pbas"]
+            acr_data = scoring_payload.get("acr")
+
+            if not acr_data or "grade" not in acr_data:
+                return Response({"error": "ACR grade is required"}, status=400)
+            
+            missing = [s for s in required_sections if s not in scoring_payload]
+            if missing:
+                return Response({"error": f"Missing appraisal sections: {missing}"}, status=400)
+
+            is_pbas = meta.get("form_type") == "PBAS"
+            if is_pbas and "courses" not in scoring_payload["teaching"]:
+                return Response({"error": "Teaching courses data is missing"}, status=400)
+
+            score_result = calculate_full_score(scoring_payload)
+
+        if submit_action == "submit":
+            # 6️⃣ WORKFLOW: FACULTY SUBMIT
+            new_state = perform_action(
+                current_state=appraisal.status,
+                next_state=States.SUBMITTED
+            )
+            old_state = {
+                "status": appraisal.status
+            }
+            appraisal.status = new_state
+
+            # 7️⃣ ASSIGN HOD
+            appraisal.hod = faculty.department.hod
+            appraisal.save()
+
+            # 8️⃣ CREATE SCORE
+            AppraisalScore.objects.create(
+                appraisal=appraisal,
+                teaching_score=score_result["teaching"]["score"],
+                research_score=score_result["research"]["total"],
+                activity_score=score_result["activities"]["score"],
+                feedback_score=score_result["pbas"]["total"],
+                total_score=score_result["total_score"],
+                acr_score = score_result["acr"]["credit_point"]
+            )
+
+            log_action(
+                    request=request,
+                    action="SUBMIT_APPRAISAL",
+                    entity="Appraisal",
+                    entity_id=appraisal.appraisal_id,
+                    old_value=old_state,
+                    new_value={
+                        "status": appraisal.status,
+                        "faculty_id": faculty.pk
+                    }
+                )
+
+            return Response(
+                {
+                    "message": "Appraisal submitted successfully",
+                    "appraisal_id": appraisal.appraisal_id,
+                    "current_state": appraisal.status,
+                    "total_score": score_result["total_score"]
+                },
+                status=201
+            )
+        else:
+            # DRAFT SAVED
+            return Response(
+                {
+                    "message": "Draft saved successfully",
+                    "appraisal_id": appraisal.appraisal_id,
+                    "current_state": appraisal.status
+                },
+                status=201
+            )
 class FacultyAppraisalListAPI(APIView):
     permission_classes = [IsAuthenticated, IsFaculty]
 
@@ -214,25 +206,49 @@ class FacultyResubmitAPI(APIView):
             faculty=faculty
         )
 
-        if appraisal.status != States.DRAFT:
+        if appraisal.status not in [States.DRAFT, States.RETURNED_BY_HOD, States.RETURNED_BY_PRINCIPAL]:
             return Response(
-                {"error": "Only draft appraisals can be resubmitted"},
+                {"error": "Only draft or returned appraisals can be resubmitted"},
                 status=400
             )
 
         # update data
-        appraisal.appraisal_data = request.data["appraisal_data"]
+        data = request.data["appraisal_data"]
+        appraisal.appraisal_data = data
+
+        submit_action = data.get("submit_action", "submit").lower()
+
+        # Calculation for Score (if submitting)
+        score_result = None
+        if submit_action == "submit":
+            score_result = calculate_full_score(data)
 
         old_state = {
             "status": appraisal.status
         }
+        
         # workflow
-        appraisal.status = perform_action(
-            current_state=appraisal.status,
-            next_state=States.SUBMITTED
-        )
+        if submit_action == "submit":
+            appraisal.status = perform_action(
+                current_state=appraisal.status,
+                next_state=States.SUBMITTED
+            )
 
         appraisal.save()
+
+        # CREATE/UPDATE SCORE
+        if score_result:
+            AppraisalScore.objects.update_or_create(
+                appraisal=appraisal,
+                defaults={
+                    "teaching_score": score_result["teaching"]["score"],
+                    "research_score": score_result["research"]["total"],
+                    "activity_score": score_result["activities"]["score"],
+                    "feedback_score": score_result["pbas"]["total"],
+                    "total_score": score_result["total_score"],
+                    "acr_score": score_result["acr"]["credit_point"]
+                }
+            )
 
         log_action(
                 request=request,

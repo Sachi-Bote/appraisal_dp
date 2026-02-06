@@ -22,7 +22,11 @@ from api.views.principal import(
     PrincipalFinalizeAPI,
 )
 from api.views.me import MeView 
-from api.views.appraisal_views import CurrentFacultyAppraisalAPIView, FacultyAppraisalStatusAPI
+from api.views.appraisal_views import (
+    CurrentFacultyAppraisalAPIView, 
+    FacultyAppraisalStatusAPI,
+    AppraisalDetailAPI
+)
 
 
 urlpatterns = [
@@ -61,7 +65,7 @@ urlpatterns = [
         HODReturnAppraisal.as_view()
     ),
     path("hod/submit/", HODSubmitAPI.as_view()),
-    path("hod/appraisals/", HODAppraisalListAPI.as_view()),
+    path("hod/appraisals/me/", HODAppraisalListAPI.as_view()),
     path("hod/resubmit/<int:appraisal_id>/", HODResubmitAPI.as_view()),
 
 
@@ -73,5 +77,7 @@ urlpatterns = [
     path("principal/appraisal/<int:appraisal_id>/finalize/", PrincipalFinalizeAPI.as_view()),
     # OTHER
     path("score/calculate/", ScoringAPI.as_view()),
+    path("appraisal/<int:appraisal_id>/", AppraisalDetailAPI.as_view()),
     path("workflow/transition/", WorkflowAPI.as_view()),
 ]
+

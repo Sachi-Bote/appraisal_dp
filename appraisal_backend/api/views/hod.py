@@ -38,65 +38,87 @@ class HODSubmitAPI(APIView):
         if not ok:
             return Response({"error": err}, status=400)
 
-        # ✅ CORRECT DUPLICATE CHECK
-        if Appraisal.objects.filter(
+        # 3️⃣ DUPLICATE CHECK / DRAFT UPDATE
+        existing_appraisal = Appraisal.objects.filter(
             faculty=faculty,
             academic_year=meta["academic_year"],
             semester=meta["semester"],
             form_type=meta["form_type"],
             is_hod_appraisal=True
-        ).exists():
-            return Response({"error": "HOD appraisal already exists"}, status=400)
+        ).first()
 
-        score_result = calculate_full_score(payload)
+        if existing_appraisal:
+            if existing_appraisal.status != States.DRAFT:
+                return Response(
+                    {"error": "HOD appraisal already exists and is submitted/finalized for this period"},
+                    status=400
+                )
+            # Update existing draft
+            appraisal = existing_appraisal
+            appraisal.appraisal_data = payload
+            appraisal.save()
+        else:
+            # 5️⃣ CREATE APPRAISAL (INITIAL STATE = DRAFT)
+            appraisal = Appraisal.objects.create(
+                faculty=faculty,
+                form_type=meta["form_type"],
+                academic_year=meta["academic_year"],
+                semester=meta["semester"],
+                appraisal_data=payload,
+                status=States.DRAFT,
+                is_hod_appraisal=True,
+                principal=User.objects.filter(role="PRINCIPAL").first()
+            )
 
-        appraisal = Appraisal.objects.create(
-            faculty=faculty,
-            form_type=meta["form_type"],
-            academic_year=meta["academic_year"],
-            semester=meta["semester"],
-            appraisal_data=payload,
-            status=States.DRAFT,
-            is_hod_appraisal=True,
-            principal=User.objects.filter(role="PRINCIPAL").first()
-        )
+        submit_action = payload.get("submit_action", "submit").lower()
 
-        old_state = {"status": appraisal.status}
+        if submit_action == "submit":
+            old_state = {"status": appraisal.status}
+            score_result = calculate_full_score(payload)
 
-        appraisal.status = perform_action(
-            current_state=appraisal.status,
-            next_state=States.SUBMITTED,
-            appraisal=appraisal
-        )
-        appraisal.save()
+            appraisal.status = perform_action(
+                current_state=appraisal.status,
+                next_state=States.SUBMITTED,
+                appraisal=appraisal
+            )
+            appraisal.save()
 
-        AppraisalScore.objects.create(
-            appraisal=appraisal,
-            teaching_score=score_result["teaching"]["score"],
-            research_score=score_result["research"]["total"],
-            activity_score=score_result["activities"]["score"],
-            feedback_score=score_result["pbas"]["total"],
-            total_score=score_result["total_score"]
-        )
+            AppraisalScore.objects.create(
+                appraisal=appraisal,
+                teaching_score=score_result["teaching"]["score"],
+                research_score=score_result["research"]["total"],
+                activity_score=score_result["activities"]["score"],
+                feedback_score=score_result["pbas"]["total"],
+                total_score=score_result["total_score"]
+            )
 
-        log_action(
-            request=request,
-            action="SUBMIT_APPRAISAL",
-            entity="Appraisal",
-            entity_id=appraisal.appraisal_id,
-            old_value=old_state,
-            new_value={"status": appraisal.status}
-        )
+            log_action(
+                request=request,
+                action="SUBMIT_APPRAISAL",
+                entity="Appraisal",
+                entity_id=appraisal.appraisal_id,
+                old_value=old_state,
+                new_value={"status": appraisal.status}
+            )
 
-        return Response(
-            {
-                "message": "HOD appraisal submitted successfully",
-                "appraisal_id": appraisal.appraisal_id,
-                "current_state": appraisal.status,
-                "total_score": score_result["total_score"]
-            },
-            status=201
-        )
+            return Response(
+                {
+                    "message": "HOD appraisal submitted successfully",
+                    "appraisal_id": appraisal.appraisal_id,
+                    "current_state": appraisal.status,
+                    "total_score": score_result["total_score"]
+                },
+                status=201
+            )
+        else:
+            return Response(
+                {
+                    "message": "Draft saved successfully",
+                    "appraisal_id": appraisal.appraisal_id,
+                    "current_state": appraisal.status
+                },
+                status=201
+            )
 
     
 
@@ -131,9 +153,9 @@ class HODResubmitAPI(APIView):
             is_hod_appraisal=True
         )
 
-        if appraisal.status != States.DRAFT:
+        if appraisal.status not in [States.DRAFT, States.RETURNED_BY_PRINCIPAL]:
             return Response(
-                {"error": "Only draft appraisals can be resubmitted"},
+                {"error": "Only draft or returned appraisals can be resubmitted"},
                 status=400
             )
 
@@ -141,12 +163,39 @@ class HODResubmitAPI(APIView):
             "status": appraisal.status
         }
 
-        appraisal.appraisal_data = request.data["appraisal_data"]
-        appraisal.status = perform_action(
-            current_state=appraisal.status,
-            next_state=States.SUBMITTED
-        )
+        # update data
+        data = request.data["appraisal_data"]
+        appraisal.appraisal_data = data
+
+        submit_action = data.get("submit_action", "submit").lower()
+
+        # Calculation for Score (if submitting)
+        score_result = None
+        if submit_action == "submit":
+            score_result = calculate_full_score(data)
+
+        # workflow
+        if submit_action == "submit":
+            appraisal.status = perform_action(
+                current_state=appraisal.status,
+                next_state=States.SUBMITTED
+            )
+        
         appraisal.save()
+
+        # CREATE/UPDATE SCORE
+        if score_result:
+            AppraisalScore.objects.update_or_create(
+                appraisal=appraisal,
+                defaults={
+                    "teaching_score": score_result["teaching"]["score"],
+                    "research_score": score_result["research"]["total"],
+                    "activity_score": score_result["activities"]["score"],
+                    "feedback_score": score_result["pbas"]["total"],
+                    "total_score": score_result["total_score"],
+                    "acr_score": score_result["acr"]["credit_point"]
+                }
+            )
 
         log_action(
                 request=request,
@@ -227,7 +276,9 @@ class HODAppraisalList(APIView):
     def get(self, request):
         try:
             department = Department.objects.get(hod=request.user)
+            print(f"DEBUG: HOD {request.user.username} found for department {department.department_name}")
         except Department.DoesNotExist:
+            print(f"DEBUG: HOD {request.user.username} NOT linked to any department")
             return Response(
                 {"error": "HOD is not assigned to any department"},
                 status=400
@@ -238,8 +289,17 @@ class HODAppraisalList(APIView):
         ).filter(
             faculty__department=department,
             is_hod_appraisal=False,
-            status__in=[States.SUBMITTED, States.REVIEWED_BY_HOD, States.HOD_APPROVED]
+            status__in=[
+                States.SUBMITTED, 
+                States.REVIEWED_BY_HOD, 
+                States.HOD_APPROVED,
+                States.REVIEWED_BY_PRINCIPAL,
+                States.PRINCIPAL_APPROVED,
+                States.FINALIZED
+            ]
         ).order_by("-updated_at")
+        
+        print(f"DEBUG: Found {appraisals.count()} faculty appraisals for department {department.department_name}")
 
         return Response([
             {
@@ -355,9 +415,9 @@ class HODReturnAppraisal(APIView):
                 status=403
             )
 
-        if appraisal.status != States.REVIEWED_BY_HOD:
+        if appraisal.status not in [States.SUBMITTED, States.REVIEWED_BY_HOD]:
             return Response(
-                {"error": "Appraisal not in HOD review state"},
+                {"error": "Appraisal not in a state that can be returned by HOD"},
                 status=400
             )
 
@@ -365,8 +425,9 @@ class HODReturnAppraisal(APIView):
         
         new_state = perform_action(
             current_state=appraisal.status,
-            next_state=States.DRAFT
+            next_state=States.RETURNED_BY_HOD
         )
+
 
         appraisal.status = new_state
 
@@ -378,10 +439,10 @@ class HODReturnAppraisal(APIView):
             role="HOD",
             defaults={
                 "approved_by": request.user,
-                "action": "REJECTED",
-                "from_state": States.REVIEWED_BY_HOD,
+                "action": "SENT_BACK",
+                "from_state": appraisal.status, # Use dynamic state
                 "to_state": new_state,
-                "remarks": None
+                "remarks": remarks
             }
         )
 

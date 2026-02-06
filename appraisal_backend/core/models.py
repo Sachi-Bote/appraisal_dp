@@ -13,13 +13,18 @@ class UserManager(BaseUserManager):
         user = self.model(
             username=username,
             role=role,
+            full_name=full_name,
+            designation=designation,
             department=department.department_name if department else None,
+            mobile_number=mobile,
+            email=email or username,
+            date_joined=date_of_joining if date_of_joining else timezone.now().date(),
             is_active=True,
             **extra_fields
         )
 
         user.set_password(password)
-        user.save(using=self._db)   # ✅ SAVE FIRST
+        user.save(using=self._db)
 
         return user
 
@@ -172,7 +177,9 @@ class Appraisal(models.Model):
     FORM_TYPE_CHOICES = (
         ('SPPU', 'SPPU'),
         ('PBAS', 'PBAS'),
+        ('FACULTY', 'FACULTY'),
     )
+
 
     STATUS_CHOICES = (
         ('DRAFT', 'Draft'),

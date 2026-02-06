@@ -63,16 +63,18 @@ class PrincipalAppraisalList(APIView):
     permission_classes = [IsAuthenticated, IsPrincipal]
 
     def get(self, request):
+        from django.db.models import Q
+        
         appraisals = (
             Appraisal.objects
             .filter(
-                status__in=[
-                    States.SUBMITTED,
+                Q(status__in=[
                     States.HOD_APPROVED,
                     States.REVIEWED_BY_PRINCIPAL,
                     States.PRINCIPAL_APPROVED,
                     States.FINALIZED,
-                ]
+                ]) |
+                Q(status=States.SUBMITTED, is_hod_appraisal=True)
             )
             .select_related("faculty__user")
             .order_by("-updated_at")
@@ -97,7 +99,9 @@ class PrincipalAppraisalList(APIView):
                 "semester": a.semester,
                 "status": a.status,
                 "remarks": a.remarks,
+                "is_hod_appraisal": a.is_hod_appraisal,
             })
+
 
         return Response(response_data)
 
@@ -146,9 +150,9 @@ class PrincipalReturnAPI(APIView):
         except Appraisal.DoesNotExist:
             return Response({"error": "Appraisal not found"}, status=404)
 
-        if appraisal.status != States.REVIEWED_BY_PRINCIPAL:
+        if appraisal.status not in [States.SUBMITTED, States.HOD_APPROVED, States.REVIEWED_BY_PRINCIPAL]:
             return Response(
-                {"error": "Appraisal not in principal review state"},
+                {"error": "Appraisal not in a state that can be returned by Principal"},
                 status=400
             )
         
@@ -159,8 +163,9 @@ class PrincipalReturnAPI(APIView):
 
         new_state = perform_action(
             current_state=appraisal.status,
-            next_state=States.DRAFT
+            next_state=States.RETURNED_BY_PRINCIPAL
         )
+
 
         appraisal.status = new_state
         appraisal.principal = request.user
@@ -173,9 +178,9 @@ class PrincipalReturnAPI(APIView):
             defaults={
                 "approved_by": request.user,
                 "action": "SENT_BACK",
-                "from_state": States.REVIEWED_BY_PRINCIPAL,
+                "from_state": appraisal.status, # Use dynamic state
                 "to_state": new_state,
-                "remarks": None
+                "remarks": remarks
             }
         )
 

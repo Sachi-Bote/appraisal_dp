@@ -17,8 +17,8 @@ class RegisterSerializer(serializers.Serializer):
     password = serializers.CharField(write_only=True)
 
     # 🔑 Role & scope
-    role = serializers.ChoiceField(choices=["FACULTY", "HOD", "PRINCIPAL"])
-    department = serializers.CharField(required=False)
+    role = serializers.ChoiceField(choices=["FACULTY", "HOD", "PRINCIPAL", "ADMIN"])
+    department = serializers.CharField(required=False, allow_blank=True)
 
     # 👤 Profile fields
     full_name = serializers.CharField(required=True)
@@ -44,22 +44,17 @@ class RegisterSerializer(serializers.Serializer):
                 "department": "Department is required for this role"
             })
 
-        if role == "PRINCIPAL" and department_name:
-            raise serializers.ValidationError({
-                "department": "Principal must not have a department"
-            })
+        if role in ["PRINCIPAL", "ADMIN"] and department_name:
+             # Just ignore it for Principal/Admin instead of erroring out to be safe
+             pass
 
-        # 🔎 Resolve department (case-insensitive)
+        # 🔎 Resolve department (auto-create if missing)
         department = None
-        if department_name:
-            try:
-                department = Department.objects.get(
-                    department_name__iexact=department_name.strip()
-                )
-            except Department.DoesNotExist:
-                raise serializers.ValidationError({
-                    "department": "Invalid department name"
-                })
+        if department_name and role != "PRINCIPAL" and role != "ADMIN":
+            department, _ = Department.objects.get_or_create(
+                department_name__iexact=department_name.strip(),
+                defaults={'department_name': department_name.strip()}
+            )
 
         # 🚫 Prevent multiple HODs per department
 
@@ -150,3 +145,5 @@ class LoginSerializer(serializers.Serializer):
 class AppraisalSerializer(serializers.ModelSerializer):
     class Meta:
         model = Appraisal
+        fields = "__all__"
+
