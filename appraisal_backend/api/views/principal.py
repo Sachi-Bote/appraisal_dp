@@ -1,5 +1,7 @@
 
 from core.services.pdf.data_mapper import get_common_pdf_data
+from core.services.pdf.sppu_mapper import get_sppu_pdf_data
+from core.services.pdf.pbas_mapper import get_pbas_pdf_data
 from core.services.pdf.html_pdf import generate_pdf_from_html
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -217,13 +219,14 @@ class PrincipalFinalizeAPI(APIView):
         appraisal.status = new_state
         appraisal.save()
 
-        data = get_common_pdf_data(appraisal)
-
-        # 2️⃣ Generate SPPU PBAS PDF
-        sppu_pdf = generate_pdf_from_html("pdf/sppu_pbas_form.html", data)
+        # 2️⃣ Generate SPPU PDF (Full)
+        sppu_data = get_sppu_pdf_data(appraisal)
+        sppu_pdf = generate_pdf_from_html("pdf/sppu_pbas_form.html", sppu_data)
         save_pdf(appraisal, sppu_pdf, "SPPU_PBAS")
 
-        aicte_pdf = generate_pdf_from_html("pdf/aicte_pbas_form.html", data)
+        # 3️⃣ Generate AICTE PBAS PDF (Truncated/Partial)
+        pbas_data = get_pbas_pdf_data(appraisal)
+        aicte_pdf = generate_pdf_from_html("pdf/aicte_pbas_form.html", pbas_data)
         save_pdf(appraisal, aicte_pdf, "AICTE_PBAS")
 
         # 4️⃣ Audit log

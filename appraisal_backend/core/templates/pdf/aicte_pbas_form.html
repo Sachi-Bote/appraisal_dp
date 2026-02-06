@@ -204,71 +204,7 @@ Date : {{ signatures.hod_date|default:"-" }}
 
 <div class="page-break"></div>
 
-<!-- ================= PART B ================= -->
-
-<h3>PART ‘B’</h3>
-
-<p class="small">
-Assessment by the Principal / Head of Department
-</p>
-
-<table>
-<colgroup>
-  <col style="width:18mm">   <!-- Sr No -->
-  <col style="width:50mm">   <!-- Activity / Semester -->
-  <col style="width:40mm">   <!-- Criteria / Course -->
-  <col style="width:40mm">   <!-- Self -->
-  <col style="width:32mm">   <!-- Verified -->
-</colgroup>
-
-<table>
-<colgroup>
-  <col style="width:130mm">
-  <col style="width:50mm">
-</colgroup>
-<tr>
-<th>Assessment Criteria</th>
-<th>Verified Grade</th>
-</tr>
-
-
-<tr>
-<td class="small">
-Good in Teaching and Satisfactory/Good in Activities
-</td>
-<td class="center">
-<b>{{ scores.overall_grade }}</b>
-</td>
-</tr>
-</table>
-
-<br>
-
-<p><b>Justification (if not satisfactory):</b></p>
-<p class="small">{{ remarks.justification|default:"-" }}</p>
-
-<br>
-
-<p><b>Comments of HOD:</b></p>
-<p class="small">{{ remarks.hod_comments|default:"-" }}</p>
-
-<br>
-
-<p><b>Remarks of Principal:</b></p>
-<p class="small">{{ remarks.principal|default:"-" }}</p>
-
-<br>
-
-<table style="border:none;">
-<colgroup>
-  <col style="width:90mm">
-  <col style="width:90mm">
-</colgroup>
-<tr>
-<td style="border:none;">Signature of HOD</td>
-<td style="border:none;">Signature of Teacher</td>
-</tr>
-</table>
+<!-- PART B Removed as per requirement to generate only upto page 3 -->
 
 </body>
 </html>
