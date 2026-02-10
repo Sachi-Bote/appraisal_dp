@@ -34,6 +34,11 @@ def validate_pbas_scores(payload: Dict) -> Tuple[bool, str]:
 
     for key, max_val in LIMITS.items():
         val = payload.get(key)
+        
+        # Special handling for teaching_process: can be a list (for PDF) or numeric (for scoring)
+        if key == "teaching_process" and isinstance(val, list):
+            continue  # Skip validation if it's a list - PDF mapper will process it
+            
         if not isinstance(val, (int, float)):
             return False, f"PBAS field '{key}' must be numeric."
         if val < 0 or val > max_val:

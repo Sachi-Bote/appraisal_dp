@@ -5,6 +5,9 @@ from rest_framework.permissions import IsAuthenticated
 from core.models import Appraisal
 from api.permissions import IsFaculty, IsHOD
 from workflow.states import States
+from django.http import FileResponse
+from core.models import GeneratedPDF
+import os
 
 
 class CurrentFacultyAppraisalAPIView(APIView):
@@ -177,3 +180,45 @@ class AppraisalDetailAPI(APIView):
                 "designation": appraisal.faculty.designation
             }
         })
+
+class DownloadAppraisalPDF(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, appraisal_id):
+        try:
+            appraisal = Appraisal.objects.get(appraisal_id=appraisal_id)
+        except Appraisal.DoesNotExist:
+            return Response({"error": "Appraisal not found"}, status=404)
+
+        # 1️⃣ Permission Check
+        is_owner = appraisal.faculty.user == request.user
+        is_principal = request.user.role == "PRINCIPAL"
+        
+        is_hod = False
+        if request.user.role == "HOD":
+            # Simple check if HOD manages this faculty's department
+            if request.user.department_set.filter(pk=appraisal.faculty.department.pk).exists():
+                is_hod = True
+
+        if not (is_owner or is_principal or is_hod):
+            return Response({"error": "Unauthorized"}, status=403)
+
+        # 2️⃣ Check for Generated PDF
+        try:
+            # We explicitly look for SPPU form as it is the primary one
+            pdf_record = GeneratedPDF.objects.filter(
+                appraisal=appraisal, 
+                pdf_path__icontains="SPPU_PBAS"
+            ).latest('generated_at')
+            
+            if not os.path.exists(pdf_record.pdf_path):
+                 return Response({"error": "PDF file not found on server"}, status=404)
+                 
+            return FileResponse(open(pdf_record.pdf_path, 'rb'), content_type='application/pdf')
+        except GeneratedPDF.DoesNotExist:
+             # Fallback to any PDF if SPPU specific one not found
+             try:
+                 pdf_record = GeneratedPDF.objects.filter(appraisal=appraisal).latest('generated_at')
+                 return FileResponse(open(pdf_record.pdf_path, 'rb'), content_type='application/pdf')
+             except GeneratedPDF.DoesNotExist:
+                 return Response({"error": "PDF not generated yet"}, status=404)

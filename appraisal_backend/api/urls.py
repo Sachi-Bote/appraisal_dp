@@ -25,7 +25,9 @@ from api.views.me import MeView
 from api.views.appraisal_views import (
     CurrentFacultyAppraisalAPIView, 
     FacultyAppraisalStatusAPI,
-    AppraisalDetailAPI
+    FacultyAppraisalStatusAPI,
+    AppraisalDetailAPI,
+    DownloadAppraisalPDF
 )
 from core.views.pdf_views import (
     generate_comprehensive_pdf,
@@ -50,6 +52,7 @@ urlpatterns = [
     #Appraisal
     path("appraisal/current/", CurrentFacultyAppraisalAPIView.as_view()),
     path("faculty/appraisal/status/", FacultyAppraisalStatusAPI.as_view()),
+    path("appraisal/<int:appraisal_id>/download/", DownloadAppraisalPDF.as_view()),
 
     # FACULTY
     path("faculty/submit/", FacultySubmitAPI.as_view()),
