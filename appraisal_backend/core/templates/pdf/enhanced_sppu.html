@@ -48,6 +48,7 @@
             width: 100%;
             border-collapse: collapse;
             margin-top: 6px;
+            table-layout: fixed;
         }
 
         th,
@@ -56,6 +57,8 @@
             padding: 3px;
             vertical-align: top;
             word-wrap: break-word;
+            word-break: break-word;
+            overflow-wrap: break-word;
         }
 
         th {
@@ -86,28 +89,28 @@
 
         .table2 {
             table-layout: fixed;
-            width: 100%;
+            width: 190mm;
+            margin-left: auto;
+            margin-right: auto;
             border-collapse: collapse;
         }
 
         .table2 th,
         .table2 td {
-            font-size: 7px;
+            font-size: 6.6px;
             padding: 2px;
             line-height: 1.2;
             vertical-align: top;
             border: 1px solid #000;
             word-wrap: break-word;
-            text-align: center;
-        }
-
-        .table2 td:nth-child(2) {
             text-align: left;
+            page-break-inside: avoid;
         }
 
         .table2 th {
             background-color: #f0f0f0;
             font-weight: bold;
+            text-align: center;
         }
 
         .highlight td {
@@ -119,8 +122,16 @@
             word-wrap: break-word;
         }
 
+        .left {
+            text-align: left;
+        }
+
         .page-break {
             page-break-before: always;
+        }
+
+        tr {
+            page-break-inside: avoid;
         }
 
         .signature-section {
@@ -128,8 +139,6 @@
         }
 
         .signature-row {
-            display: flex;
-            justify-content: space-between;
             margin-top: 15px;
         }
 
@@ -164,6 +173,12 @@
     <!-- SECTION A: GENERAL -->
     <h4 class="section-title">SECTION – A: GENERAL</h4>
     <table>
+        <colgroup>
+            <col style="width: 8%;">
+            <col style="width: 40%;">
+            <col style="width: 2%;">
+            <col style="width: 50%;">
+        </colgroup>
         <tr>
             <td style="width: 8%;">1.</td>
             <td style="width: 40%;">Name</td>
@@ -202,6 +217,13 @@
     <h4 class="center"><strong>TABLE 1</strong></h4>
 
     <table>
+        <colgroup>
+            <col style="width: 5%;">
+            <col style="width: 25%;">
+            <col style="width: 18%;">
+            <col style="width: 26%;">
+            <col style="width: 26%;">
+        </colgroup>
         <thead>
             <tr>
                 <th style="width: 5%;">Sr.</th>
@@ -268,54 +290,13 @@
                     Not involved / undertaken any of the activities: <strong>Not satisfactory</strong>
                 </td>
                 <td>
-                    <table style="border: none; margin: 0;">
-                        <tr style="border: none;">
-                            <td style="border: none; padding: 2px;">Sr.</td>
-                            <td style="border: none; padding: 2px;">Yes/No</td>
-                        </tr>
-                        <tr style="border: none;">
-                            <td style="border: none; padding: 2px;">(a)</td>
-                            <td style="border: none; padding: 2px;">
-                                {% if table1_activities.checkboxes.a_administrative %}Yes{% else %}No{% endif %}
-                            </td>
-                        </tr>
-                        <tr style="border: none;">
-                            <td style="border: none; padding: 2px;">(b)</td>
-                            <td style="border: none; padding: 2px;">
-                                {% if table1_activities.checkboxes.b_exam_duties %}Yes{% else %}No{% endif %}
-                            </td>
-                        </tr>
-                        <tr style="border: none;">
-                            <td style="border: none; padding: 2px;">(c)</td>
-                            <td style="border: none; padding: 2px;">
-                                {% if table1_activities.checkboxes.c_student_related %}Yes{% else %}No{% endif %}
-                            </td>
-                        </tr>
-                        <tr style="border: none;">
-                            <td style="border: none; padding: 2px;">(d)</td>
-                            <td style="border: none; padding: 2px;">
-                                {% if table1_activities.checkboxes.d_organizing_events %}Yes{% else %}No{% endif %}
-                            </td>
-                        </tr>
-                        <tr style="border: none;">
-                            <td style="border: none; padding: 2px;">(e)</td>
-                            <td style="border: none; padding: 2px;">
-                                {% if table1_activities.checkboxes.e_phd_guidance %}Yes{% else %}No{% endif %}
-                            </td>
-                        </tr>
-                        <tr style="border: none;">
-                            <td style="border: none; padding: 2px;">(f)</td>
-                            <td style="border: none; padding: 2px;">
-                                {% if table1_activities.checkboxes.f_research_project %}Yes{% else %}No{% endif %}
-                            </td>
-                        </tr>
-                        <tr style="border: none;">
-                            <td style="border: none; padding: 2px;">(g)</td>
-                            <td style="border: none; padding: 2px;">
-                                {% if table1_activities.checkboxes.g_sponsored_project %}Yes{% else %}No{% endif %}
-                            </td>
-                        </tr>
-                    </table>
+                    (a): {% if table1_activities.checkboxes.a_administrative %}Yes{% else %}No{% endif %}<br />
+                    (b): {% if table1_activities.checkboxes.b_exam_duties %}Yes{% else %}No{% endif %}<br />
+                    (c): {% if table1_activities.checkboxes.c_student_related %}Yes{% else %}No{% endif %}<br />
+                    (d): {% if table1_activities.checkboxes.d_organizing_events %}Yes{% else %}No{% endif %}<br />
+                    (e): {% if table1_activities.checkboxes.e_phd_guidance %}Yes{% else %}No{% endif %}<br />
+                    (f): {% if table1_activities.checkboxes.f_research_project %}Yes{% else %}No{% endif %}<br />
+                    (g): {% if table1_activities.checkboxes.g_sponsored_project %}Yes{% else %}No{% endif %}
                     <br />
                     <strong>Grade: {{ table1_activities.self_grade }}</strong>
                 </td>
@@ -338,11 +319,11 @@
 
     <table class="table2">
         <colgroup>
-            <col style="width: 3%;">
-            <col style="width: 46%;">
-            <col style="width: 17%;">
-            <col style="width: 17%;">
-            <col style="width: 17%;">
+            <col style="width: 8mm;">
+            <col style="width: 98mm;">
+            <col style="width: 28mm;">
+            <col style="width: 28mm;">
+            <col style="width: 28mm;">
         </colgroup>
         <thead>
             <tr>
@@ -365,46 +346,56 @@
 
             <!-- 2. Publications -->
             <tr>
-                <td rowspan="8" class="center">2.</td>
-                <td colspan="4"><strong>Publication (other than Research papers)</strong></td>
+                <td class="center">2.</td>
+                <td><strong>Publication (other than Research papers)</strong></td>
+                <td></td>
+                <td></td>
+                <td></td>
             </tr>
             <tr class="highlight">
+                <td></td>
                 <td><strong>(a) Books authored which are published by;</strong></td>
                 <td></td>
                 <td></td>
                 <td></td>
             </tr>
             <tr>
+                <td></td>
                 <td>International publishers</td>
                 <td class="center">12</td>
                 <td class="center">{{ table2_research.books_international.total_score }}</td>
                 <td></td>
             </tr>
             <tr>
+                <td></td>
                 <td>National Publishers</td>
                 <td class="center">10</td>
                 <td class="center">{{ table2_research.books_national.total_score }}</td>
                 <td></td>
             </tr>
             <tr class="highlight">
+                <td></td>
                 <td>Chapter in Edited Book</td>
                 <td class="center">05</td>
                 <td class="center">{{ table2_research.chapter_edited_book.total_score }}</td>
                 <td></td>
             </tr>
             <tr>
+                <td></td>
                 <td>Editor of Book by International Publisher</td>
                 <td class="center">10</td>
                 <td class="center">{{ table2_research.editor_book_international.total_score }}</td>
                 <td></td>
             </tr>
             <tr>
+                <td></td>
                 <td>Editor of Book by National Publisher</td>
                 <td class="center">08</td>
                 <td class="center">{{ table2_research.editor_book_national.total_score }}</td>
                 <td></td>
             </tr>
             <tr class="highlight">
+                <td></td>
                 <td><strong>(b) Translation works in Indian and Foreign Languages by qualified faculties</strong></td>
                 <td class="center">03</td>
                 <td class="center">{{ table2_research.translation_works.total_score }}</td>
@@ -413,47 +404,57 @@
 
             <!-- 3. ICT Mediated Teaching -->
             <tr>
-                <td rowspan="11" class="center">3.</td>
-                <td colspan="4"><strong>Creation of ICT mediated Teaching Learning pedagogy and content and development
+                <td class="center">3.</td>
+                <td><strong>Creation of ICT mediated Teaching Learning pedagogy and content and development
                         of new and innovative course and curricula</strong></td>
+                <td></td>
+                <td></td>
+                <td></td>
             </tr>
             <tr class="highlight">
+                <td></td>
                 <td><strong>(a) Development of Innovative pedagogy</strong></td>
                 <td class="center">05</td>
                 <td class="center">{{ table2_research.pedagogy_development.total_score }}</td>
                 <td></td>
             </tr>
             <tr>
+                <td></td>
                 <td><strong>(b) Design of new curricula and courses</strong></td>
                 <td class="center">02 per curricula/course</td>
                 <td class="center">{{ table2_research.curriculum_design.total_score }}</td>
                 <td></td>
             </tr>
             <tr class="highlight">
+                <td></td>
                 <td><strong>(c) MOOCs</strong></td>
                 <td></td>
                 <td></td>
                 <td></td>
             </tr>
             <tr>
+                <td></td>
                 <td>MOOCs of 4 quadrants (4 credit course)(In case of MOOCs of lesser credits 05 marks/credit)</td>
                 <td class="center">20</td>
                 <td class="center">{{ table2_research.moocs_4quadrant.total_score }}</td>
                 <td></td>
             </tr>
             <tr class="highlight">
+                <td></td>
                 <td>MOOCs (developed in 4 quadrant) per module/lecture</td>
                 <td class="center">05</td>
                 <td class="center">{{ table2_research.moocs_single_lecture.total_score }}</td>
                 <td></td>
             </tr>
             <tr>
+                <td></td>
                 <td>Content writer/subject matter expert for each module of MOOCs (at least one quadrant)</td>
                 <td class="center">02</td>
                 <td class="center">{{ table2_research.moocs_content_writer.total_score }}</td>
                 <td></td>
             </tr>
             <tr class="highlight">
+                <td></td>
                 <td>Course Coordinator for MOOCs (4 credit course)(In case of MOOCs of lesser credits 05 marks/credit)
                 </td>
                 <td class="center">08</td>
@@ -461,18 +462,21 @@
                 <td></td>
             </tr>
             <tr>
+                <td></td>
                 <td><strong>(d) e-Content</strong></td>
                 <td></td>
                 <td></td>
                 <td></td>
             </tr>
             <tr class="highlight">
+                <td></td>
                 <td>Development of e-Content in 4 quadrant for a complete course/e-book</td>
                 <td class="center">12</td>
                 <td class="center">{{ table2_research.econtent_4quadrant_complete.total_score }}</td>
                 <td></td>
             </tr>
             <tr>
+                <td></td>
                 <td>e-Content(developed in 4 quadrants) per module</td>
                 <td class="center">05</td>
                 <td class="center">{{ table2_research.econtent_4quadrant_per_module.total_score }}</td>
@@ -481,10 +485,14 @@
 
             <!-- 4. Research Guidance -->
             <tr>
-                <td rowspan="9" class="center">4.</td>
-                <td colspan="4"><strong>(a) Research guidance</strong></td>
+                <td class="center">4.</td>
+                <td><strong>(a) Research guidance</strong></td>
+                <td></td>
+                <td></td>
+                <td></td>
             </tr>
             <tr class="highlight">
+                <td></td>
                 <td>Ph.D.</td>
                 <td>10 per degree awarded<br />05 per thesis submitted</td>
                 <td class="center">
@@ -494,42 +502,49 @@
                 <td></td>
             </tr>
             <tr>
+                <td></td>
                 <td>M.Phil/P.G. dissertation</td>
                 <td class="center">02 per degree awarded</td>
                 <td class="center">{{ table2_research.mphil_pg_dissertation.total_score }}</td>
                 <td></td>
             </tr>
             <tr class="highlight">
+                <td></td>
                 <td><strong>(b) Research Projects Completed</strong></td>
                 <td></td>
                 <td></td>
                 <td></td>
             </tr>
             <tr>
+                <td></td>
                 <td>More than 10 lakhs</td>
                 <td class="center">10</td>
                 <td class="center">{{ table2_research.research_project_above_10l.total_score }}</td>
                 <td></td>
             </tr>
             <tr class="highlight">
+                <td></td>
                 <td>Less than 10 lakhs</td>
                 <td class="center">05</td>
                 <td class="center">{{ table2_research.research_project_below_10l.total_score }}</td>
                 <td></td>
             </tr>
             <tr>
+                <td></td>
                 <td><strong>(c) Research Projects Ongoing:</strong></td>
                 <td></td>
                 <td></td>
                 <td></td>
             </tr>
             <tr class="highlight">
+                <td></td>
                 <td>More than 10 lakhs</td>
                 <td class="center">05</td>
                 <td class="center">{{ table2_research.research_project_ongoing_above_10l.total_score }}</td>
                 <td></td>
             </tr>
             <tr>
+                <td></td>
                 <td>(d) Consultancy</td>
                 <td class="center">03</td>
                 <td class="center">{{ table2_research.consultancy.total_score }}</td>
@@ -538,16 +553,21 @@
 
             <!-- 5. Patents -->
             <tr>
-                <td rowspan="3" class="center">5.</td>
-                <td colspan="4"><strong>(a) Patents</strong></td>
+                <td class="center">5.</td>
+                <td><strong>(a) Patents</strong></td>
+                <td></td>
+                <td></td>
+                <td></td>
             </tr>
             <tr class="highlight">
+                <td></td>
                 <td>International</td>
                 <td class="center">10</td>
                 <td class="center">{{ table2_research.patent_international.total_score }}</td>
                 <td></td>
             </tr>
             <tr>
+                <td></td>
                 <td>National</td>
                 <td class="center">07</td>
                 <td class="center">{{ table2_research.patent_national.total_score }}</td>
@@ -556,18 +576,23 @@
 
             <!-- 6. Policy Documents -->
             <tr>
-                <td rowspan="3" class="center">6.</td>
-                <td colspan="4"><strong>(b) *Policy Document (Submitted to an International body/organization like
+                <td class="center">6.</td>
+                <td><strong>(b) *Policy Document (Submitted to an International body/organization like
                         UNO/UNESCO/World Bank/ International Monetary Fund etc. or Central Government or State
                         Government)</strong></td>
+                <td></td>
+                <td></td>
+                <td></td>
             </tr>
             <tr class="highlight">
+                <td></td>
                 <td>International</td>
                 <td class="center">07</td>
                 <td class="center">{{ table2_research.policy_international.total_score }}</td>
                 <td></td>
             </tr>
             <tr>
+                <td></td>
                 <td>National</td>
                 <td class="center">04</td>
                 <td class="center">{{ table2_research.policy_national.total_score }}</td>
@@ -576,16 +601,21 @@
 
             <!-- 7. Awards/Fellowship -->
             <tr>
-                <td rowspan="3" class="center">7.</td>
-                <td colspan="4"><strong>(c) Awards/Fellowship</strong></td>
+                <td class="center">7.</td>
+                <td><strong>(c) Awards/Fellowship</strong></td>
+                <td></td>
+                <td></td>
+                <td></td>
             </tr>
             <tr class="highlight">
+                <td></td>
                 <td>International</td>
                 <td class="center">07</td>
                 <td class="center">{{ table2_research.award_international.total_score }}</td>
                 <td></td>
             </tr>
             <tr>
+                <td></td>
                 <td>National</td>
                 <td class="center">05</td>
                 <td class="center">{{ table2_research.award_national.total_score }}</td>
@@ -594,30 +624,37 @@
 
             <!-- 8. Conference Presentations -->
             <tr>
-                <td rowspan="5" class="center">8.</td>
-                <td colspan="4"><strong>*Invited lectures/ Resource Person/ paper presentation in Seminars/ Conferences/
+                <td class="center">8.</td>
+                <td><strong>*Invited lectures/ Resource Person/ paper presentation in Seminars/ Conferences/
                         full paper in Conference Proceeding (Paper presented in Seminars/ Conferences and also published
                         as full paper shall be accounted only once for calculating will be scored as)</strong></td>
+                <td></td>
+                <td></td>
+                <td></td>
             </tr>
             <tr class="highlight">
+                <td></td>
                 <td>International (Abroad)</td>
                 <td class="center">07</td>
                 <td class="center">{{ table2_research.conference_international_abroad.total_score }}</td>
                 <td></td>
             </tr>
             <tr>
+                <td></td>
                 <td>International (within Country)</td>
                 <td class="center">05</td>
                 <td class="center">{{ table2_research.conference_international_country.total_score }}</td>
                 <td></td>
             </tr>
             <tr class="highlight">
+                <td></td>
                 <td>National</td>
                 <td class="center">03</td>
                 <td class="center">{{ table2_research.conference_national.total_score }}</td>
                 <td></td>
             </tr>
             <tr>
+                <td></td>
                 <td>State University</td>
                 <td class="center">02</td>
                 <td class="center">{{ table2_research.conference_state_university.total_score }}</td>
@@ -636,10 +673,12 @@
     <!-- SIGNATURES -->
     <div class="signature-section">
         <p style="text-align: right; margin-top: 20px;"><strong>Signature of the teacher</strong></p>
-        <div class="signature-row">
-            <div><strong>Signature of HOD</strong></div>
-            <div>&nbsp;</div>
-        </div>
+        <table style="border: none; margin-top: 15px;">
+            <tr>
+                <td style="border: none; width: 50%;"><strong>Signature of HOD</strong></td>
+                <td style="border: none; width: 50%;">&nbsp;</td>
+            </tr>
+        </table>
         <div style="margin-top: 5px;"><strong>Date:</strong></div>
     </div>
 

@@ -92,9 +92,9 @@ WSGI_APPLICATION = 'appraisal_backend.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'appraisal_db',
-        'USER': 'appraisal_manager',
-        'PASSWORD': 'appraisal@123',
+        'NAME': 'appraisal_db_dp',
+        'USER': 'admin',
+        'PASSWORD': 'admin123',
         'HOST': 'localhost',
         'PORT': '5432',
     }
@@ -188,3 +188,9 @@ CORS_ALLOW_METHODS = [
     'DELETE',
     'OPTIONS',
 ]
+
+# PDF rendering engine options: "auto", "edge", "playwright", "xhtml2pdf"
+PDF_RENDER_ENGINE = "auto"
+PDF_ALLOW_FALLBACK = True
+EDGE_BROWSER_PATH = r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"
+PLAYWRIGHT_BROWSER_PATH = r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"

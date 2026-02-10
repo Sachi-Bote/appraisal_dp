@@ -5,6 +5,103 @@ from scoring.engine import calculate_full_score
 from decimal import Decimal
 
 
+def _to_bool(value) -> bool:
+    """
+    Normalize frontend payload values to boolean.
+    Handles bool, int, and string values like Yes/No, True/False, 1/0.
+    """
+    if isinstance(value, bool):
+        return value
+    if value is None:
+        return False
+    if isinstance(value, (int, float)):
+        return value != 0
+    if isinstance(value, str):
+        normalized = value.strip().lower()
+        if normalized in {"true", "yes", "y", "1", "on"}:
+            return True
+        if normalized in {"false", "no", "n", "0", "off", ""}:
+            return False
+    return bool(value)
+
+
+def _get_first_key(data: Dict, keys: List[str], default=False):
+    for key in keys:
+        if key in data:
+            return data.get(key)
+    return default
+
+
+def _build_activity_flags(raw: Dict) -> Dict[str, bool]:
+    """
+    Resolve activity flags from multiple payload shapes used by frontend versions.
+    Priority: explicit per-activity fields. Category-derived mapping is optional.
+    """
+    sources = []
+    activities = raw.get("activities", {})
+    if isinstance(activities, dict):
+        sources.append(activities)
+
+    pbas = raw.get("pbas", {})
+    if isinstance(pbas, dict):
+        pbas_activities = pbas.get("activities", {})
+        if isinstance(pbas_activities, dict):
+            sources.append(pbas_activities)
+        step2b = pbas.get("step2b", {})
+        if isinstance(step2b, dict):
+            sources.append(step2b)
+
+    for key in ("step2b", "section_b", "sectionB", "sppu"):
+        section = raw.get(key, {})
+        if isinstance(section, dict):
+            section_activities = section.get("activities", {})
+            if isinstance(section_activities, dict):
+                sources.append(section_activities)
+            sources.append(section)
+
+    key_aliases = {
+        "a_administrative": ["administrative_responsibility", "administrativeResponsibilities", "administrative", "a", "activity_a"],
+        "b_exam_duties": ["exam_duties", "examDuties", "examination_duties", "examinationDuties", "b", "activity_b"],
+        "c_student_related": ["student_related", "studentRelated", "student_related_activities", "studentRelatedActivities", "c", "activity_c"],
+        "d_organizing_events": ["organizing_events", "organizingEvents", "organizing_seminars", "organizingSeminars", "d", "activity_d"],
+        "e_phd_guidance": ["phd_guidance", "phdGuidance", "guiding_phd_students", "guidingPhdStudents", "e", "activity_e"],
+        "f_research_project": ["research_project", "researchProject", "conducting_research_projects", "conductingResearchProjects", "f", "activity_f"],
+        "g_sponsored_project": ["sponsored_project", "sponsoredProject", "publication_in_ugc", "publicationInUgc", "g", "activity_g"],
+    }
+
+    resolved = {k: None for k in key_aliases}
+
+    for src in sources:
+        if not isinstance(src, dict):
+            continue
+        for target, aliases in key_aliases.items():
+            if resolved[target] is not None:
+                continue
+            for alias in aliases:
+                if alias in src:
+                    resolved[target] = _to_bool(src.get(alias))
+                    break
+
+    # Optional legacy mapping: derive from departmental/institute/society if explicit flags are absent.
+    if all(v is None for v in resolved.values()):
+        use_legacy_derivation = False
+        if use_legacy_derivation and isinstance(activities, dict):
+            departmental = _to_bool(_get_first_key(activities, ["departmental", "departmental_activities", "departmentalActivities"], False))
+            institute = _to_bool(_get_first_key(activities, ["institute", "institute_activities", "instituteActivities"], False))
+            society = _to_bool(_get_first_key(activities, ["society", "society_activities", "societyActivities"], False))
+            resolved = {
+                "a_administrative": departmental,
+                "b_exam_duties": departmental,
+                "c_student_related": society,
+                "d_organizing_events": institute,
+                "e_phd_guidance": departmental,
+                "f_research_project": departmental or institute,
+                "g_sponsored_project": institute,
+            }
+
+    return {k: bool(v) for k, v in resolved.items()}
+
+
 def get_enhanced_sppu_pdf_data(appraisal: Appraisal) -> Dict:
     """
     Extract data for SPPU PDF matching official format with Table 1 & Table 2.
@@ -53,37 +150,7 @@ def get_enhanced_sppu_pdf_data(appraisal: Appraisal) -> Dict:
         teaching_grade = "Not Satisfactory"
     
     # ========== TABLE 1: ACTIVITIES (with checkboxes a-g) ==========
-    activities_dict = raw.get("activities", {})
-    
-    # Check if using detailed structure or general categories
-    has_detailed_flags = "administrative_responsibility" in activities_dict
-    
-    if has_detailed_flags:
-        # Use detailed boolean flags (if available)
-        activities_checkboxes = {
-            "a_administrative": activities_dict.get("administrative_responsibility", False),
-            "b_exam_duties": activities_dict.get("exam_duties", False),
-            "c_student_related": activities_dict.get("student_related", False),
-            "d_organizing_events": activities_dict.get("organizing_events", False),
-            "e_phd_guidance": activities_dict.get("phd_guidance", False),
-            "f_research_project": activities_dict.get("research_project", False),
-            "g_sponsored_project": activities_dict.get("sponsored_project", False),
-        }
-    else:
-        # Map from general categories (departmental, institute, society)
-        departmental = activities_dict.get("departmental", False)
-        institute = activities_dict.get("institute", False)
-        society = activities_dict.get("society", False)
-        
-        activities_checkboxes = {
-            "a_administrative": departmental,  # Administrative work is departmental
-            "b_exam_duties": departmental,     # Exam duties are departmental
-            "c_student_related": society,      # Student activities are society work
-            "d_organizing_events": institute,  # Institute events
-            "e_phd_guidance": departmental,    # PhD guidance is departmental
-            "f_research_project": departmental or institute,  # Research can be both
-            "g_sponsored_project": institute,  # Sponsored projects are institute level
-        }
+    activities_checkboxes = _build_activity_flags(raw)
     
     # Count checked activities
     activity_count = sum(1 for v in activities_checkboxes.values() if v)
