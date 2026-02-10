@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>SPPU Performance Appraisal - Part A & B</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 12mm 10mm;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 9.5px;
+            line-height: 1.2;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        .header h3 {
+            margin: 2px 0;
+            font-size: 12px;
+        }
+
+        .header h2 {
+            margin: 5px 0;
+            font-size: 13px;
+        }
+
+        h3.part-title {
+            text-align: center;
+            font-size: 14px;
+            margin: 8px 0;
+        }
+
+        h4.section-title {
+            text-align: center;
+            font-size: 11px;
+            margin: 6px 0;
+            text-decoration: underline;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 6px;
+        }
+
+        th,
+        td {
+            border: 1px solid #000;
+            padding: 3px;
+            vertical-align: top;
+            word-wrap: break-word;
+        }
+
+        th {
+            background-color: #f0f0f0;
+            font-weight: bold;
+            text-align: center;
+            font-size: 9px;
+        }
+
+        .center {
+            text-align: center;
+        }
+
+        .small {
+            font-size: 8px;
+        }
+
+        .highlight {
+            background-color: #ffff99;
+        }
+
+        .table2-description {
+            font-size: 8.5px;
+            line-height: 1.1;
+        }
+
+        /* ================= TABLE 2 FIX ================= */
+
+        .table2 {
+            table-layout: fixed;
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .table2 th,
+        .table2 td {
+            font-size: 7px;
+            padding: 2px;
+            line-height: 1.2;
+            vertical-align: top;
+            border: 1px solid #000;
+            word-wrap: break-word;
+            text-align: center;
+        }
+
+        .table2 td:nth-child(2) {
+            text-align: left;
+        }
+
+        .table2 th {
+            background-color: #f0f0f0;
+            font-weight: bold;
+        }
+
+        .highlight td {
+            background-color: #ffff99;
+        }
+
+        .table2-activity {
+            text-align: left;
+            word-wrap: break-word;
+        }
+
+        .page-break {
+            page-break-before: always;
+        }
+
+        .signature-section {
+            margin-top: 20px;
+        }
+
+        .signature-row {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 15px;
+        }
+
+        .checkbox {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border: 1px solid #000;
+            margin: 0 3px;
+            text-align: center;
+            line-height: 12px;
+        }
+
+        .checked {
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- HEADER -->
+    <div class="header">
+        <h3>Savitribai Phule Pune University, Pune.</h3>
+        <h3>Modern Education Society's</h3>
+        <h2>Wadia College of Engineering, Pune 01</h2>
+    </div>
+
+    <h3 class="part-title">PART 'A'</h3>
+    <h4>YEAR OF PERFORMANCE APPRAISAL: {{ academic_year }}</h4>
+
+    <!-- SECTION A: GENERAL -->
+    <h4 class="section-title">SECTION – A: GENERAL</h4>
+    <table>
+        <tr>
+            <td style="width: 8%;">1.</td>
+            <td style="width: 40%;">Name</td>
+            <td style="width: 2%;">:</td>
+            <td>{{ faculty.name }}</td>
+        </tr>
+        <tr>
+            <td>2.</td>
+            <td>Designation</td>
+            <td>:</td>
+            <td>{{ faculty.designation }}</td>
+        </tr>
+        <tr>
+            <td>3.</td>
+            <td>Name of the Department / Centre</td>
+            <td>:</td>
+            <td>{{ faculty.department }}</td>
+        </tr>
+        <tr>
+            <td>4.</td>
+            <td>Email Telephone / Mobile number</td>
+            <td>:</td>
+            <td>{{ faculty.email }} / {{ faculty.mobile }}</td>
+        </tr>
+        <tr>
+            <td>5.</td>
+            <td><strong>YEAR OF PERFORMANCE APPRAISAL</strong></td>
+            <td>:</td>
+            <td>{{ academic_year }}</td>
+        </tr>
+    </table>
+
+    <!-- SECTION B: TABLE 1 -->
+    <h4 class="section-title" style="margin-top: 12px;">SECTION - B:</h4>
+    <p style="text-align: right; margin: 4px 0;"><strong>Appendix II</strong></p>
+    <h4 class="center"><strong>TABLE 1</strong></h4>
+
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 5%;">Sr.</th>
+                <th style="width: 25%;">Activity</th>
+                <th style="width: 18%;">Grading Criteria</th>
+                <th style="width: 26%;">Self-appraisal<br />Grading</th>
+                <th style="width: 26%;">Verified<br />Grading</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- ROW 1: TEACHING -->
+            <tr>
+                <td class="center">1.</td>
+                <td>
+                    <strong>Teaching</strong><br />
+                    (Number of classes taught/total classes assigned)<br />
+                    <strong>(Classes taught includes sessions on tutorials, lab and other teaching related
+                        activities)</strong>
+                </td>
+                <td>
+                    80% & above: <strong>Good</strong><br />
+                    Below 80% but 70% & above: <strong>Satisfactory</strong><br />
+                    Less than 70%: <strong>Not satisfactory</strong>
+                </td>
+                <td>
+                    Total Classes Assigned: {{ table1_teaching.total_assigned }}<br />
+                    No. of Classes Taught: {{ table1_teaching.total_taught }}<br />
+                    % of Classes Taught: {{ table1_teaching.percentage }}%<br />
+                    <strong>Grade: {{ table1_teaching.self_grade }}</strong>
+                </td>
+                <td>
+                    {{ table1_teaching.verified_grade }}
+                </td>
+            </tr>
+
+            <!-- ROW 2: INVOLVEMENT IN ACTIVITIES -->
+            <tr>
+                <td class="center">2.</td>
+                <td>
+                    <strong>Involvement in the university /college student related activities /research
+                        activities:</strong><br />
+                    <span class="small">
+                        (a) Administrative responsibilities such as head, chairperson/ Dean /Director/ Co-ordinator,
+                        warden etc.<br />
+                        (b) Examination and evaluation duties assigned by the college / university or attending the
+                        examination paper evaluation.<br />
+                        (c) Student related co-curricular, extension and field based activities such as student clubs,
+                        career counseling, study visits, student seminars and other events, cultural, sports, NCC, NSS
+                        and community services.<br />
+                        (d) Organizing seminars/conference /workshop, other college/university activities.<br />
+                        (e) Evidence of activity involved in guiding PhD students.<br />
+                        (f) Conducting minor or major research project<br />
+                        (g) Sponsored by national or international agencies.<br />
+                        <br />
+                        At least one single or joint publication in peer-reviewed or UGC list of journals.
+                    </span>
+                    <br /><br />
+                    <em class="small">Note: Number of activities can be within or across the broad categories of
+                        activities</em>
+                </td>
+                <td>
+                    Involved in at least 3 activities: <strong>Good</strong><br />
+                    1-2 activities: <strong>Satisfactory</strong><br />
+                    Not involved / undertaken any of the activities: <strong>Not satisfactory</strong>
+                </td>
+                <td>
+                    <table style="border: none; margin: 0;">
+                        <tr style="border: none;">
+                            <td style="border: none; padding: 2px;">Sr.</td>
+                            <td style="border: none; padding: 2px;">Yes/No</td>
+                        </tr>
+                        <tr style="border: none;">
+                            <td style="border: none; padding: 2px;">(a)</td>
+                            <td style="border: none; padding: 2px;">
+                                {% if table1_activities.checkboxes.a_administrative %}Yes{% else %}No{% endif %}
+                            </td>
+                        </tr>
+                        <tr style="border: none;">
+                            <td style="border: none; padding: 2px;">(b)</td>
+                            <td style="border: none; padding: 2px;">
+                                {% if table1_activities.checkboxes.b_exam_duties %}Yes{% else %}No{% endif %}
+                            </td>
+                        </tr>
+                        <tr style="border: none;">
+                            <td style="border: none; padding: 2px;">(c)</td>
+                            <td style="border: none; padding: 2px;">
+                                {% if table1_activities.checkboxes.c_student_related %}Yes{% else %}No{% endif %}
+                            </td>
+                        </tr>
+                        <tr style="border: none;">
+                            <td style="border: none; padding: 2px;">(d)</td>
+                            <td style="border: none; padding: 2px;">
+                                {% if table1_activities.checkboxes.d_organizing_events %}Yes{% else %}No{% endif %}
+                            </td>
+                        </tr>
+                        <tr style="border: none;">
+                            <td style="border: none; padding: 2px;">(e)</td>
+                            <td style="border: none; padding: 2px;">
+                                {% if table1_activities.checkboxes.e_phd_guidance %}Yes{% else %}No{% endif %}
+                            </td>
+                        </tr>
+                        <tr style="border: none;">
+                            <td style="border: none; padding: 2px;">(f)</td>
+                            <td style="border: none; padding: 2px;">
+                                {% if table1_activities.checkboxes.f_research_project %}Yes{% else %}No{% endif %}
+                            </td>
+                        </tr>
+                        <tr style="border: none;">
+                            <td style="border: none; padding: 2px;">(g)</td>
+                            <td style="border: none; padding: 2px;">
+                                {% if table1_activities.checkboxes.g_sponsored_project %}Yes{% else %}No{% endif %}
+                            </td>
+                        </tr>
+                    </table>
+                    <br />
+                    <strong>Grade: {{ table1_activities.self_grade }}</strong>
+                </td>
+                <td>
+                    {{ table1_activities.verified_grade }}
+                </td>
+            </tr>
+        </tbody>
+    </table>
+
+    <!-- TABLE 2 -->
+    <div class="page-break"></div>
+    <h4 class="center" style="margin-top: 10px;"><strong>TABLE 2</strong></h4>
+    <p class="center small"><strong>Methodology for University and College Teacher for calculating Academic/Research
+            Score</strong></p>
+    <p class="small">(Assessment must be based on evidence produced by the teacher such as: copy of publication, project
+        sanction letter, utilization and completion certificates issued by the University and acknowledgment for patent
+        filing and approval letters, students' Ph.D. award letter, etc.)</p>
+
+
+    <table class="table2">
+        <colgroup>
+            <col style="width: 3%;">
+            <col style="width: 46%;">
+            <col style="width: 17%;">
+            <col style="width: 17%;">
+            <col style="width: 17%;">
+        </colgroup>
+        <thead>
+            <tr>
+                <th>S.N.</th>
+                <th>Academic / Research Activity</th>
+                <th>Max Score</th>
+                <th>Self</th>
+                <th>Verified</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- 1. Research Papers -->
+            <tr>
+                <td class="center">1.</td>
+                <td><strong>(*) Research Papers in Peer-Reviewed or UGC listed Journals</strong></td>
+                <td class="center">08 per paper</td>
+                <td class="center">{{ table2_research.peer_reviewed_journals.total_score }}</td>
+                <td></td>
+            </tr>
+
+            <!-- 2. Publications -->
+            <tr>
+                <td rowspan="8" class="center">2.</td>
+                <td colspan="4"><strong>Publication (other than Research papers)</strong></td>
+            </tr>
+            <tr class="highlight">
+                <td><strong>(a) Books authored which are published by;</strong></td>
+                <td></td>
+                <td></td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>International publishers</td>
+                <td class="center">12</td>
+                <td class="center">{{ table2_research.books_international.total_score }}</td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>National Publishers</td>
+                <td class="center">10</td>
+                <td class="center">{{ table2_research.books_national.total_score }}</td>
+                <td></td>
+            </tr>
+            <tr class="highlight">
+                <td>Chapter in Edited Book</td>
+                <td class="center">05</td>
+                <td class="center">{{ table2_research.chapter_edited_book.total_score }}</td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>Editor of Book by International Publisher</td>
+                <td class="center">10</td>
+                <td class="center">{{ table2_research.editor_book_international.total_score }}</td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>Editor of Book by National Publisher</td>
+                <td class="center">08</td>
+                <td class="center">{{ table2_research.editor_book_national.total_score }}</td>
+                <td></td>
+            </tr>
+            <tr class="highlight">
+                <td><strong>(b) Translation works in Indian and Foreign Languages by qualified faculties</strong></td>
+                <td class="center">03</td>
+                <td class="center">{{ table2_research.translation_works.total_score }}</td>
+                <td></td>
+            </tr>
+
+            <!-- 3. ICT Mediated Teaching -->
+            <tr>
+                <td rowspan="11" class="center">3.</td>
+                <td colspan="4"><strong>Creation of ICT mediated Teaching Learning pedagogy and content and development
+                        of new and innovative course and curricula</strong></td>
+            </tr>
+            <tr class="highlight">
+                <td><strong>(a) Development of Innovative pedagogy</strong></td>
+                <td class="center">05</td>
+                <td class="center">{{ table2_research.pedagogy_development.total_score }}</td>
+                <td></td>
+            </tr>
+            <tr>
+                <td><strong>(b) Design of new curricula and courses</strong></td>
+                <td class="center">02 per curricula/course</td>
+                <td class="center">{{ table2_research.curriculum_design.total_score }}</td>
+                <td></td>
+            </tr>
+            <tr class="highlight">
+                <td><strong>(c) MOOCs</strong></td>
+                <td></td>
+                <td></td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>MOOCs of 4 quadrants (4 credit course)(In case of MOOCs of lesser credits 05 marks/credit)</td>
+                <td class="center">20</td>
+                <td class="center">{{ table2_research.moocs_4quadrant.total_score }}</td>
+                <td></td>
+            </tr>
+            <tr class="highlight">
+                <td>MOOCs (developed in 4 quadrant) per module/lecture</td>
+                <td class="center">05</td>
+                <td class="center">{{ table2_research.moocs_single_lecture.total_score }}</td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>Content writer/subject matter expert for each module of MOOCs (at least one quadrant)</td>
+                <td class="center">02</td>
+                <td class="center">{{ table2_research.moocs_content_writer.total_score }}</td>
+                <td></td>
+            </tr>
+            <tr class="highlight">
+                <td>Course Coordinator for MOOCs (4 credit course)(In case of MOOCs of lesser credits 05 marks/credit)
+                </td>
+                <td class="center">08</td>
+                <td class="center">{{ table2_research.moocs_coordinator.total_score }}</td>
+                <td></td>
+            </tr>
+            <tr>
+                <td><strong>(d) e-Content</strong></td>
+                <td></td>
+                <td></td>
+                <td></td>
+            </tr>
+            <tr class="highlight">
+                <td>Development of e-Content in 4 quadrant for a complete course/e-book</td>
+                <td class="center">12</td>
+                <td class="center">{{ table2_research.econtent_4quadrant_complete.total_score }}</td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>e-Content(developed in 4 quadrants) per module</td>
+                <td class="center">05</td>
+                <td class="center">{{ table2_research.econtent_4quadrant_per_module.total_score }}</td>
+                <td></td>
+            </tr>
+
+            <!-- 4. Research Guidance -->
+            <tr>
+                <td rowspan="9" class="center">4.</td>
+                <td colspan="4"><strong>(a) Research guidance</strong></td>
+            </tr>
+            <tr class="highlight">
+                <td>Ph.D.</td>
+                <td>10 per degree awarded<br />05 per thesis submitted</td>
+                <td class="center">
+                    Awarded: {{ table2_research.phd_awarded.total_score }}<br />
+                    Submitted: {{ table2_research.phd_submitted.total_score }}
+                </td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>M.Phil/P.G. dissertation</td>
+                <td class="center">02 per degree awarded</td>
+                <td class="center">{{ table2_research.mphil_pg_dissertation.total_score }}</td>
+                <td></td>
+            </tr>
+            <tr class="highlight">
+                <td><strong>(b) Research Projects Completed</strong></td>
+                <td></td>
+                <td></td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>More than 10 lakhs</td>
+                <td class="center">10</td>
+                <td class="center">{{ table2_research.research_project_above_10l.total_score }}</td>
+                <td></td>
+            </tr>
+            <tr class="highlight">
+                <td>Less than 10 lakhs</td>
+                <td class="center">05</td>
+                <td class="center">{{ table2_research.research_project_below_10l.total_score }}</td>
+                <td></td>
+            </tr>
+            <tr>
+                <td><strong>(c) Research Projects Ongoing:</strong></td>
+                <td></td>
+                <td></td>
+                <td></td>
+            </tr>
+            <tr class="highlight">
+                <td>More than 10 lakhs</td>
+                <td class="center">05</td>
+                <td class="center">{{ table2_research.research_project_ongoing_above_10l.total_score }}</td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>(d) Consultancy</td>
+                <td class="center">03</td>
+                <td class="center">{{ table2_research.consultancy.total_score }}</td>
+                <td></td>
+            </tr>
+
+            <!-- 5. Patents -->
+            <tr>
+                <td rowspan="3" class="center">5.</td>
+                <td colspan="4"><strong>(a) Patents</strong></td>
+            </tr>
+            <tr class="highlight">
+                <td>International</td>
+                <td class="center">10</td>
+                <td class="center">{{ table2_research.patent_international.total_score }}</td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>National</td>
+                <td class="center">07</td>
+                <td class="center">{{ table2_research.patent_national.total_score }}</td>
+                <td></td>
+            </tr>
+
+            <!-- 6. Policy Documents -->
+            <tr>
+                <td rowspan="3" class="center">6.</td>
+                <td colspan="4"><strong>(b) *Policy Document (Submitted to an International body/organization like
+                        UNO/UNESCO/World Bank/ International Monetary Fund etc. or Central Government or State
+                        Government)</strong></td>
+            </tr>
+            <tr class="highlight">
+                <td>International</td>
+                <td class="center">07</td>
+                <td class="center">{{ table2_research.policy_international.total_score }}</td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>National</td>
+                <td class="center">04</td>
+                <td class="center">{{ table2_research.policy_national.total_score }}</td>
+                <td></td>
+            </tr>
+
+            <!-- 7. Awards/Fellowship -->
+            <tr>
+                <td rowspan="3" class="center">7.</td>
+                <td colspan="4"><strong>(c) Awards/Fellowship</strong></td>
+            </tr>
+            <tr class="highlight">
+                <td>International</td>
+                <td class="center">07</td>
+                <td class="center">{{ table2_research.award_international.total_score }}</td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>National</td>
+                <td class="center">05</td>
+                <td class="center">{{ table2_research.award_national.total_score }}</td>
+                <td></td>
+            </tr>
+
+            <!-- 8. Conference Presentations -->
+            <tr>
+                <td rowspan="5" class="center">8.</td>
+                <td colspan="4"><strong>*Invited lectures/ Resource Person/ paper presentation in Seminars/ Conferences/
+                        full paper in Conference Proceeding (Paper presented in Seminars/ Conferences and also published
+                        as full paper shall be accounted only once for calculating will be scored as)</strong></td>
+            </tr>
+            <tr class="highlight">
+                <td>International (Abroad)</td>
+                <td class="center">07</td>
+                <td class="center">{{ table2_research.conference_international_abroad.total_score }}</td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>International (within Country)</td>
+                <td class="center">05</td>
+                <td class="center">{{ table2_research.conference_international_country.total_score }}</td>
+                <td></td>
+            </tr>
+            <tr class="highlight">
+                <td>National</td>
+                <td class="center">03</td>
+                <td class="center">{{ table2_research.conference_national.total_score }}</td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>State University</td>
+                <td class="center">02</td>
+                <td class="center">{{ table2_research.conference_state_university.total_score }}</td>
+                <td></td>
+            </tr>
+
+            <!-- TOTAL -->
+            <tr style="background-color: #e0e0e0;">
+                <td colspan="3" class="center"><strong>Total 1+2+3+4+5+6=</strong></td>
+                <td class="center"><strong>{{ table2_total_score }}</strong></td>
+                <td></td>
+            </tr>
+        </tbody>
+    </table>
+
+    <!-- SIGNATURES -->
+    <div class="signature-section">
+        <p style="text-align: right; margin-top: 20px;"><strong>Signature of the teacher</strong></p>
+        <div class="signature-row">
+            <div><strong>Signature of HOD</strong></div>
+            <div>&nbsp;</div>
+        </div>
+        <div style="margin-top: 5px;"><strong>Date:</strong></div>
+    </div>
+
+    <!-- PART B -->
+    <div class="page-break"></div>
+    <h3 class="part-title">PART 'B'</h3>
+
+    <p class="small">(Adverse remarks as well as appreciation of any outstanding work shall be brought to the notice of
+        the person concerned by the Vice-Chancellor/Principal or Head of the University Department with a view to make
+        improvement in the work, by the person concerned.)</p>
+
+    <h4>1. (a) Assessment by the Principal(or Heads/ Head of the Department(for teachers) of the work done under each
+        head of activity :</h4>
+
+    <!-- Overall Grading for TABLE 1 -->
+    <h4 style="margin-top: 15px;">Overall Grading for TABLE 1</h4>
+    <p><strong>Assessment Criteria and Methodology for University Teachers</strong></p>
+
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 60%;"></th>
+                <th style="width: 40%;">Verified Grading</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Good in teaching and satisfactory or good in activity at Sl. No.2</td>
+                <td class="center"><strong>Good</strong></td>
+            </tr>
+            <tr>
+                <td>Satisfactory in teaching and good or satisfactory in activity at Sl.No.2</td>
+                <td class="center"><strong>Satisfactory</strong></td>
+            </tr>
+            <tr>
+                <td>If neither good nor satisfactory in overall grading</td>
+                <td class="center"><strong>Not Satisfactory</strong></td>
+            </tr>
+        </tbody>
+    </table>
+
+    <p class="small" style="margin-top: 10px;"><strong>Note:</strong></p>
+    <p class="small"><em>For the purpose of assessing the grading of Activity at Serial No.1 and Serial No.2, all such
+            periods of duration which have been spent by the teacher on official and paid leaves such as Maternity
+            Leave, Child Care Leave, Study Leave, Medical Leave, Extraordinary Leave and Deputation shall be excluded
+            from the grading assessment.</em></p>
+    <p class="small"><em>The teacher shall be assessed for the remaining period of duration and the same be extrapolated
+            for the entire shall not be assessed for the grading of the teacher. The teacher on such leaves or
+            deputation as mentioned above shall not be put to any disadvantage for promotion under CAS due to his/her
+            absence from his/her teaching responsibilities subject to the condition that such leave/deputation was
+            undertaken with the prior approval of the competent authority following all procedures laid down in these
+            regulations and as per the acts, ordinances of the parent institution.</em></p>
+
+    <h4 style="margin-top: 20px;">(b) Justification of assessment of work as not satisfactory:</h4>
+    <p>{{ part_b.justification }}</p>
+
+    <h4 style="margin-top: 20px;">3. Comments of the Head of the Department on Table 1 and Table 2:</h4>
+    <p>{{ part_b.hod_comments_table1 }}</p>
+    <p>{{ part_b.hod_comments_table2 }}</p>
+
+</body>
+
+</html>

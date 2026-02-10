@@ -27,6 +27,13 @@ from api.views.appraisal_views import (
     FacultyAppraisalStatusAPI,
     AppraisalDetailAPI
 )
+from core.views.pdf_views import (
+    generate_comprehensive_pdf,
+    generate_enhanced_sppu_pdf,
+    generate_enhanced_pbas_pdf
+)
+from api.views.pdf_list import AppraisalPDFListAPI
+from api.views.pdf_download import PDFDownloadAPI
 
 
 urlpatterns = [
@@ -79,5 +86,14 @@ urlpatterns = [
     path("score/calculate/", ScoringAPI.as_view()),
     path("appraisal/<int:appraisal_id>/", AppraisalDetailAPI.as_view()),
     path("workflow/transition/", WorkflowAPI.as_view()),
+    
+    # PDF Generation
+    path("appraisal/<int:appraisal_id>/pdf/comprehensive/", generate_comprehensive_pdf, name="comprehensive_pdf"),
+    path("appraisal/<int:appraisal_id>/pdf/sppu-enhanced/", generate_enhanced_sppu_pdf, name="enhanced_sppu_pdf"),
+    path("appraisal/<int:appraisal_id>/pdf/pbas-enhanced/", generate_enhanced_pbas_pdf, name="enhanced_pbas_pdf"),
+    
+    # PDF List & Download
+    path("appraisal/<int:appraisal_id>/pdfs/", AppraisalPDFListAPI.as_view(), name="pdf_list"),
+    path("appraisal/<int:appraisal_id>/pdf/download/<int:pdf_id>/", PDFDownloadAPI.as_view(), name="pdf_download"),
 ]
 
