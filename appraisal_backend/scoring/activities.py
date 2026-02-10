@@ -224,11 +224,37 @@ ACR_GRADE_SCORE_MAP = {
 
 
 
-def calculate_institute_acr_score(grade: str) -> dict:
-    grade = grade.strip().upper()
+def calculate_institute_acr_score(grade) -> dict:
+    # If explicitly numeric, treat as direct score
+    if isinstance(grade, (int, float)):
+        return {
+            "activity": "ACR",
+            "grade": str(grade),
+            "credit_point": Decimal(str(grade)),
+        }
 
-    return {
-        "activity": "ACR",
-        "grade": grade,
-        "credit_point": ACR_GRADE_SCORE_MAP.get(grade, Decimal("0")),
-    }
+    # If string, try to parse or map
+    grade_str = str(grade).strip().upper()
+
+    # Try mapping first
+    if grade_str in ACR_GRADE_SCORE_MAP:
+        return {
+            "activity": "ACR",
+            "grade": grade_str,
+            "credit_point": ACR_GRADE_SCORE_MAP[grade_str],
+        }
+
+    # Fallback: try parsing as number
+    try:
+        val = Decimal(grade_str)
+        return {
+            "activity": "ACR",
+            "grade": grade_str,
+            "credit_point": val,
+        }
+    except:
+        return {
+            "activity": "ACR",
+            "grade": grade_str,
+            "credit_point": Decimal("0"),
+        }

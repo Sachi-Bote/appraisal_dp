@@ -84,7 +84,7 @@ class FacultySubmitAPI(APIView):
             # DEBUG: Log what we're saving
             import json
             print("\n" + "="*80)
-            print("💾 BEFORE SAVE - Full Payload Structure:")
+            print("BEFORE SAVE - Full Payload Structure:")
             print("="*80)
             print(f"Top-level keys: {list(payload.keys())}")
             if 'activities' in payload:
@@ -102,7 +102,7 @@ class FacultySubmitAPI(APIView):
             appraisal.refresh_from_db()
             saved_data = appraisal.appraisal_data
             print("\n" + "="*80)
-            print("✅ AFTER SAVE - What's in Database:")
+            print("AFTER SAVE - What's in Database:")
             print("="*80)
             if 'activities' in saved_data:
                 print(f"'activities' in DB:")
