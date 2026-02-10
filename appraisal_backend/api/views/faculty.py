@@ -80,8 +80,34 @@ class FacultySubmitAPI(APIView):
                 )
             # Update existing draft
             appraisal = existing_appraisal
+            
+            # DEBUG: Log what we're saving
+            import json
+            print("\n" + "="*80)
+            print("💾 BEFORE SAVE - Full Payload Structure:")
+            print("="*80)
+            print(f"Top-level keys: {list(payload.keys())}")
+            if 'activities' in payload:
+                print(f"\n'activities' section:")
+                print(json.dumps(payload['activities'], indent=2))
+            if 'pbas' in payload and 'departmental_activities' in payload.get('pbas', {}):
+                dept_acts = payload['pbas']['departmental_activities']
+                print(f"\nPBAS departmental_activities has {len(dept_acts)} items")
+            print("="*80 + "\n")
+            
             appraisal.appraisal_data = payload
             appraisal.save()
+            
+            # DEBUG: Verify what was actually saved
+            appraisal.refresh_from_db()
+            saved_data = appraisal.appraisal_data
+            print("\n" + "="*80)
+            print("✅ AFTER SAVE - What's in Database:")
+            print("="*80)
+            if 'activities' in saved_data:
+                print(f"'activities' in DB:")
+                print(json.dumps(saved_data['activities'], indent=2))
+            print("="*80 + "\n")
         else:
             # 5️⃣ CREATE APPRAISAL (INITIAL STATE = DRAFT)
             appraisal = Appraisal.objects.create(
