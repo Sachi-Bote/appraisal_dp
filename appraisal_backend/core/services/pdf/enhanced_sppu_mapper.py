@@ -322,12 +322,13 @@ def get_enhanced_sppu_pdf_data(appraisal: Appraisal) -> Dict:
         
         elif "project" in entry_type:
             if "ongoing" in entry_type:
-                if ">10" in entry_type or "above" in entry_type:
+                # Support "gt_10", "above_10", ">10", etc.
+                if any(k in entry_type for k in [">10", "above", "gt_10"]):
                     table2_categories["research_project_ongoing_above_10l"]["count"] += count
                 else:
                     table2_categories["research_project_ongoing_below_10l"]["count"] += count
             else:
-                if ">10" in entry_type or "above" in entry_type:
+                if any(k in entry_type for k in [">10", "above", "gt_10"]):
                     table2_categories["research_project_above_10l"]["count"] += count
                 else:
                     table2_categories["research_project_below_10l"]["count"] += count
@@ -356,8 +357,8 @@ def get_enhanced_sppu_pdf_data(appraisal: Appraisal) -> Dict:
             else:
                 table2_categories["award_national"]["count"] += count
         
-        # Category 8: Conferences
-        elif "conference" in entry_type or "presentation" in entry_type:
+        # Category 8: Conferences / Invited Lectures
+        elif any(k in entry_type for k in ["conference", "presentation", "lecture", "talk", "resource", "invited"]):
             if "international" in entry_type:
                 if "abroad" in entry_type:
                     table2_categories["conference_international_abroad"]["count"] += count
@@ -365,7 +366,7 @@ def get_enhanced_sppu_pdf_data(appraisal: Appraisal) -> Dict:
                     table2_categories["conference_international_country"]["count"] += count
             elif "national" in entry_type:
                 table2_categories["conference_national"]["count"] += count
-            elif "state" in entry_type or "university" in entry_type:
+            elif any(k in entry_type for k in ["state", "university"]):
                 table2_categories["conference_state_university"]["count"] += count
     
     # Calculate scores for each category
