@@ -10,8 +10,16 @@ def get_pbas_pdf_data(appraisal: Appraisal) -> Dict:
     pbas = raw.get("pbas", {})
 
     teaching_rows = pbas.get("teaching_process", [])
-    feedback_rows = pbas.get("students_feedback", [])
+    if not isinstance(teaching_rows, list):
+        teaching_rows = raw.get("teaching", {}).get("courses", [])
+
+    feedback_rows = pbas.get("student_feedback", pbas.get("students_feedback", []))
     activity_rows = pbas.get("departmental_activities", [])
+
+    if not isinstance(feedback_rows, list):
+        feedback_rows = []
+    if not isinstance(activity_rows, list):
+        activity_rows = []
 
     return {
         **base,
@@ -30,7 +38,7 @@ def get_pbas_pdf_data(appraisal: Appraisal) -> Dict:
         "pbas_feedback": {
             "rows": feedback_rows,
             "total": round(
-                sum(r.get("average", 0) for r in feedback_rows), 2
+                sum(r.get("average", r.get("feedback_score", 0)) for r in feedback_rows), 2
             ),
         },
 

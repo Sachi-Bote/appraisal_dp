@@ -208,7 +208,8 @@ def get_enhanced_sppu_pdf_data(appraisal: Appraisal) -> Dict:
         "chapter_edited_book": {"count": 0, "score_per": 5, "total_score": 0},
         "editor_book_international": {"count": 0, "score_per": 10, "total_score": 0},
         "editor_book_national": {"count": 0, "score_per": 8, "total_score": 0},
-        "translation_works": {"count": 0, "score_per": 3, "total_score": 0},
+        "translation_chapter_or_paper": {"count": 0, "score_per": 3, "total_score": 0},
+        "translation_book": {"count": 0, "score_per": 8, "total_score": 0},
         "chapter_research_compilation": {"count": 0, "score_per": 3, "total_score": 0},
         
         # 3. ICT Mediated Teaching
@@ -238,8 +239,9 @@ def get_enhanced_sppu_pdf_data(appraisal: Appraisal) -> Dict:
         "patent_national": {"count": 0, "score_per": 7, "total_score": 0},
         
         # 6. Policy Documents
-        "policy_international": {"count": 0, "score_per": 7, "total_score": 0},
-        "policy_national": {"count": 0, "score_per": 4, "total_score": 0},
+        "policy_international": {"count": 0, "score_per": 10, "total_score": 0},
+        "policy_national": {"count": 0, "score_per": 7, "total_score": 0},
+        "policy_state": {"count": 0, "score_per": 4, "total_score": 0},
         
         # 7. Awards/Fellowship
         "award_international": {"count": 0, "score_per": 7, "total_score": 0},
@@ -281,7 +283,10 @@ def get_enhanced_sppu_pdf_data(appraisal: Appraisal) -> Dict:
                 table2_categories["chapter_edited_book"]["count"] += count
         
         elif "translation" in entry_type:
-            table2_categories["translation_works"]["count"] += count
+            if "book" in entry_type:
+                table2_categories["translation_book"]["count"] += count
+            else:
+                table2_categories["translation_chapter_or_paper"]["count"] += count
         
         # Category 3: ICT/MOOCs/e-Content
         elif "mooc" in entry_type:
@@ -347,8 +352,10 @@ def get_enhanced_sppu_pdf_data(appraisal: Appraisal) -> Dict:
         elif "policy" in entry_type:
             if "international" in entry_type:
                 table2_categories["policy_international"]["count"] += count
-            else:
+            elif "national" in entry_type:
                 table2_categories["policy_national"]["count"] += count
+            else:
+                table2_categories["policy_state"]["count"] += count
         
         # Category 7: Awards
         elif "award" in entry_type or "fellowship" in entry_type:

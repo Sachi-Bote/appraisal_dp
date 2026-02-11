@@ -8,13 +8,13 @@
     <style>
         @page {
             size: A4;
-            margin: 18mm 14mm;
+            margin: 15mm 12mm;
         }
 
         body {
             font-family: Arial, Helvetica, sans-serif;
             font-size: 11px;
-            line-height: 1.3;
+            line-height: 1.4;
         }
 
         h2,
@@ -28,6 +28,7 @@
             width: 100%;
             border-collapse: collapse;
             margin-top: 8px;
+            margin-bottom: 8px;
         }
 
         th,
@@ -40,6 +41,7 @@
         th {
             background-color: #f0f0f0;
             font-weight: bold;
+            text-align: center;
         }
 
         .center {
@@ -52,6 +54,20 @@
 
         .small {
             font-size: 10px;
+        }
+
+        .section-header {
+            background-color: #e0e0e0;
+            padding: 6px;
+            margin-top: 10px;
+            margin-bottom: 6px;
+            font-weight: bold;
+            font-size: 13px;
+            text-align: center;
+        }
+
+        tr {
+            page-break-inside: avoid;
         }
     </style>
 </head>
@@ -67,7 +83,7 @@
     <h3>YEAR OF PERFORMANCE APPRAISAL : {{ period }}</h3>
 
     <!-- ================= SECTION A - GENERAL ================= -->
-    <h4>SECTION – A : GENERAL</h4>
+    <div class="section-header">SECTION - A : GENERAL</div>
 
     <table>
         <colgroup>
@@ -81,31 +97,49 @@
             <td>1</td>
             <td>Name</td>
             <td>:</td>
-            <td>{{ faculty.name }}</td>
+            <td>{{ faculty_ext.name|default:faculty.name }}</td>
         </tr>
         <tr>
             <td>2</td>
             <td>Designation</td>
             <td>:</td>
-            <td>{{ faculty.designation }}</td>
+            <td>{{ faculty_ext.designation|default:faculty.designation }}</td>
         </tr>
         <tr>
             <td>3</td>
-            <td>Department / Centre</td>
+            <td>Date of Joining and Name of the Department / Centre</td>
             <td>:</td>
-            <td>{{ faculty.department }}</td>
+            <td>{{ faculty_ext.date_of_joining|default:"-" }} / {{ faculty_ext.department_center|default:faculty.department }}</td>
         </tr>
         <tr>
             <td>4</td>
-            <td>Email / Mobile</td>
+            <td>Communication Address</td>
             <td>:</td>
-            <td>{{ faculty.email }} / {{ faculty.mobile }}</td>
+            <td>{{ faculty_ext.communication_address|default:"-" }}</td>
         </tr>
         <tr>
             <td>5</td>
-            <td>Assessment Year</td>
+            <td>Email / Telephone / Mobile Number</td>
             <td>:</td>
-            <td>{{ period }}</td>
+            <td>{{ faculty_ext.email_mobile|default:faculty.email }}</td>
+        </tr>
+        <tr>
+            <td>6</td>
+            <td>Current Designation &amp; Grade Pay</td>
+            <td>:</td>
+            <td>{{ faculty_ext.present_designation_grade_pay|default:"-" }}</td>
+        </tr>
+        <tr>
+            <td>7</td>
+            <td>Designation of Promotion with Due Date of Eligibility</td>
+            <td>:</td>
+            <td>{{ faculty_ext.promotion_designation_due_date|default:"-" }}</td>
+        </tr>
+        <tr>
+            <td>8</td>
+            <td>Assessment Period (Without Break)</td>
+            <td>:</td>
+            <td>{{ faculty_ext.assessment_period|default:period }}</td>
         </tr>
     </table>
 
@@ -315,9 +349,9 @@
             {% for entry in research.entries %}
             <tr>
                 <td class="center">{{ forloop.counter }}</td>
-                <td>{{ entry.type }}</td>
+                <td>{{ entry.type_display|default:entry.type }}</td>
                 <td class="center">{{ entry.count }}</td>
-                <td>{{ entry.title|default:"-" }}</td>
+                <td>{% firstof entry.title_display entry.title entry.name "-" %}</td>
                 <td class="center">{{ entry.year|default:"-" }}</td>
                 <td class="center">{{ entry.enclosure_no|default:"-" }}</td>
             </tr>
@@ -488,3 +522,5 @@
 </body>
 
 </html>
+
+

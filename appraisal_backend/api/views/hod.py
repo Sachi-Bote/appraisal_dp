@@ -295,7 +295,9 @@ class HODAppraisalList(APIView):
                 States.HOD_APPROVED,
                 States.REVIEWED_BY_PRINCIPAL,
                 States.PRINCIPAL_APPROVED,
-                States.FINALIZED
+                States.FINALIZED,
+                States.RETURNED_BY_HOD,
+                States.RETURNED_BY_PRINCIPAL,
             ]
         ).order_by("-updated_at")
         

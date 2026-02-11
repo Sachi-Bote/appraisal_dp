@@ -30,7 +30,6 @@ from api.views.appraisal_views import (
     DownloadAppraisalPDF
 )
 from core.views.pdf_views import (
-    generate_comprehensive_pdf,
     generate_enhanced_sppu_pdf,
     generate_enhanced_pbas_pdf
 )
@@ -91,7 +90,6 @@ urlpatterns = [
     path("workflow/transition/", WorkflowAPI.as_view()),
     
     # PDF Generation
-    path("appraisal/<int:appraisal_id>/pdf/comprehensive/", generate_comprehensive_pdf, name="comprehensive_pdf"),
     path("appraisal/<int:appraisal_id>/pdf/sppu-enhanced/", generate_enhanced_sppu_pdf, name="enhanced_sppu_pdf"),
     path("appraisal/<int:appraisal_id>/pdf/pbas-enhanced/", generate_enhanced_pbas_pdf, name="enhanced_pbas_pdf"),
     

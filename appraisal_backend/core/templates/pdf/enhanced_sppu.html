@@ -7,13 +7,14 @@
     <style>
         @page {
             size: A4;
-            margin: 12mm 10mm;
+            margin: 15mm 12mm;
         }
 
         body {
-            font-family: Arial, sans-serif;
-            font-size: 9.5px;
-            line-height: 1.2;
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 11px;
+            line-height: 1.4;
+            color: #1f2937;
         }
 
         .header {
@@ -23,38 +24,42 @@
 
         .header h3 {
             margin: 2px 0;
-            font-size: 12px;
+            font-size: 14px;
         }
 
         .header h2 {
             margin: 5px 0;
-            font-size: 13px;
+            font-size: 16px;
         }
 
         h3.part-title {
             text-align: center;
-            font-size: 14px;
+            font-size: 16px;
             margin: 8px 0;
         }
 
         h4.section-title {
             text-align: center;
-            font-size: 11px;
+            font-size: 13px;
             margin: 6px 0;
-            text-decoration: underline;
+            text-decoration: none;
+            background-color: #e9edf3;
+            padding: 6px;
+            border: 1px solid #cfd8e3;
         }
 
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 6px;
+            margin-top: 8px;
+            margin-bottom: 8px;
             table-layout: fixed;
         }
 
         th,
         td {
             border: 1px solid #000;
-            padding: 3px;
+            padding: 4px;
             vertical-align: top;
             word-wrap: break-word;
             word-break: break-word;
@@ -62,10 +67,10 @@
         }
 
         th {
-            background-color: #f0f0f0;
+            background-color: #edf2f7;
             font-weight: bold;
             text-align: center;
-            font-size: 9px;
+            font-size: 10px;
         }
 
         .center {
@@ -77,7 +82,7 @@
         }
 
         .highlight {
-            background-color: #ffff99;
+            background-color: #f7fafc;
         }
 
         .table2-description {
@@ -97,9 +102,9 @@
 
         .table2 th,
         .table2 td {
-            font-size: 6.6px;
-            padding: 2px;
-            line-height: 1.2;
+            font-size: 8.5px;
+            padding: 3px;
+            line-height: 1.25;
             vertical-align: top;
             border: 1px solid #000;
             word-wrap: break-word;
@@ -108,13 +113,13 @@
         }
 
         .table2 th {
-            background-color: #f0f0f0;
+            background-color: #edf2f7;
             font-weight: bold;
             text-align: center;
         }
 
         .highlight td {
-            background-color: #ffff99;
+            background-color: #f7fafc;
         }
 
         .table2-activity {
@@ -398,7 +403,14 @@
                 <td></td>
                 <td><strong>(b) Translation works in Indian and Foreign Languages by qualified faculties</strong></td>
                 <td class="center">03</td>
-                <td class="center">{{ table2_research.translation_works.total_score }}</td>
+                <td class="center">{{ table2_research.translation_chapter_or_paper.total_score }}</td>
+                <td></td>
+            </tr>
+            <tr>
+                <td></td>
+                <td>Book</td>
+                <td class="center">08</td>
+                <td class="center">{{ table2_research.translation_book.total_score }}</td>
                 <td></td>
             </tr>
 
@@ -482,6 +494,20 @@
                 <td class="center">{{ table2_research.econtent_4quadrant_per_module.total_score }}</td>
                 <td></td>
             </tr>
+            <tr class="highlight">
+                <td></td>
+                <td>Contribution to development of e-content module in complete course/paper/e-book (at least one quadrant)</td>
+                <td class="center">02</td>
+                <td class="center">{{ table2_research.econtent_module_contribution.total_score }}</td>
+                <td></td>
+            </tr>
+            <tr>
+                <td></td>
+                <td>Editor of e-content for complete course/paper/e-book</td>
+                <td class="center">10</td>
+                <td class="center">{{ table2_research.econtent_editor.total_score }}</td>
+                <td></td>
+            </tr>
 
             <!-- 4. Research Guidance -->
             <tr>
@@ -545,6 +571,13 @@
             </tr>
             <tr>
                 <td></td>
+                <td>Less than 10 lakhs</td>
+                <td class="center">02</td>
+                <td class="center">{{ table2_research.research_project_ongoing_below_10l.total_score }}</td>
+                <td></td>
+            </tr>
+            <tr>
+                <td></td>
                 <td>(d) Consultancy</td>
                 <td class="center">03</td>
                 <td class="center">{{ table2_research.consultancy.total_score }}</td>
@@ -587,15 +620,22 @@
             <tr class="highlight">
                 <td></td>
                 <td>International</td>
-                <td class="center">07</td>
+                <td class="center">10</td>
                 <td class="center">{{ table2_research.policy_international.total_score }}</td>
                 <td></td>
             </tr>
             <tr>
                 <td></td>
                 <td>National</td>
-                <td class="center">04</td>
+                <td class="center">07</td>
                 <td class="center">{{ table2_research.policy_national.total_score }}</td>
+                <td></td>
+            </tr>
+            <tr>
+                <td></td>
+                <td>State</td>
+                <td class="center">04</td>
+                <td class="center">{{ table2_research.policy_state.total_score }}</td>
                 <td></td>
             </tr>
 
