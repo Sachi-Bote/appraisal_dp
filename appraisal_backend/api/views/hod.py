@@ -14,6 +14,8 @@ from api.serializers import AppraisalSerializer
 from core.models import FacultyProfile, Appraisal, AppraisalScore, User
 from core.utils.audit import log_action
 
+ALLOWED_VERIFIED_GRADES = {"Good", "Satisfactory", "Not Satisfactory"}
+
 
 class HODSubmitAPI(APIView):
     permission_classes = [IsAuthenticated, IsHOD]
@@ -352,11 +354,32 @@ class HODApproveAppraisal(APIView):
                 status=403
             )
 
+        if appraisal.is_hod_appraisal:
+            return Response(
+                {"error": "HOD can approve faculty appraisals only"},
+                status=400
+            )
+
         # ❌ Invalid state
         if appraisal.status != States.REVIEWED_BY_HOD:
             return Response(
                 {"error": "Appraisal not in HOD review state"},
                 status=400
+            )
+
+        # Grade must be verified in review state before approval.
+        # Backward-compatible path: allow UI to send verified_grade in approve payload.
+        score = AppraisalScore.objects.filter(appraisal=appraisal).first()
+        if not score or not score.verified_grade:
+            verified_grade = request.data.get("verified_grade")
+            if verified_grade not in ALLOWED_VERIFIED_GRADES:
+                return Response(
+                    {"error": "Set verified grade first (after starting review) before approval"},
+                    status=400
+                )
+            AppraisalScore.objects.update_or_create(
+                appraisal=appraisal,
+                defaults={"verified_grade": verified_grade}
             )
 
         # ✅ Approve
@@ -367,14 +390,6 @@ class HODApproveAppraisal(APIView):
 
         appraisal.status = new_state
         appraisal.save()
-
-        # ✅ SAVE VERIFIED GRADE (if provided)
-        verified_grade = request.data.get("verified_grade")
-        if verified_grade:
-            AppraisalScore.objects.update_or_create(
-                appraisal=appraisal,
-                defaults={"verified_grade": verified_grade}
-            )
 
         ApprovalHistory.objects.update_or_create(
             appraisal=appraisal,
@@ -392,6 +407,59 @@ class HODApproveAppraisal(APIView):
             "message": "Approved by HOD",
             "new_state": new_state
         })
+
+
+class HODVerifyGradeAPI(APIView):
+    permission_classes = [IsAuthenticated, IsHOD]
+
+    def post(self, request, appraisal_id):
+        verified_grade = request.data.get("verified_grade")
+        if verified_grade not in ALLOWED_VERIFIED_GRADES:
+            return Response(
+                {"error": "verified_grade must be one of: Good, Satisfactory, Not Satisfactory"},
+                status=400
+            )
+
+        try:
+            appraisal = Appraisal.objects.select_related("faculty__department").get(appraisal_id=appraisal_id)
+        except Appraisal.DoesNotExist:
+            return Response({"error": "Appraisal not found"}, status=404)
+
+        try:
+            department = Department.objects.get(hod=request.user)
+        except Department.DoesNotExist:
+            return Response(
+                {"error": "HOD is not assigned to any department"},
+                status=400
+            )
+
+        if appraisal.faculty.department != department:
+            return Response(
+                {"error": "You cannot act on appraisals outside your department"},
+                status=403
+            )
+
+        if appraisal.is_hod_appraisal:
+            return Response(
+                {"error": "HOD can verify faculty appraisals only"},
+                status=400
+            )
+
+        if appraisal.status != States.REVIEWED_BY_HOD:
+            return Response(
+                {"error": "Verified grade can be updated after HOD starts review"},
+                status=400
+            )
+
+        AppraisalScore.objects.update_or_create(
+            appraisal=appraisal,
+            defaults={"verified_grade": verified_grade}
+        )
+
+        return Response(
+            {"message": "Verified grade updated by HOD", "verified_grade": verified_grade},
+            status=200
+        )
 
 
 # =========================

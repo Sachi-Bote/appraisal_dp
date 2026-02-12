@@ -383,13 +383,25 @@ def get_enhanced_sppu_pdf_data(appraisal: Appraisal) -> Dict:
     # Calculate total Table 2 score
     table2_total_score = sum(cat["total_score"] for cat in table2_categories.values())
     
-    # ========== OVERALL GRADING ==========
+    # ========== OVERALL / VERIFIED GRADING ==========
     if teaching_grade == "Good" and activities_grade in ["Good", "Satisfactory"]:
         overall_grade = "Good"
     elif teaching_grade == "Satisfactory" and activities_grade in ["Good", "Satisfactory"]:
         overall_grade = "Satisfactory"
     else:
         overall_grade = "Not Satisfactory"
+
+    verified_grade = ""
+    if hasattr(appraisal, "appraisalscore"):
+        verified_grade = appraisal.appraisalscore.verified_grade or ""
+
+    show_verified_grade = appraisal.status in {
+        "HOD_APPROVED",
+        "REVIEWED_BY_PRINCIPAL",
+        "PRINCIPAL_APPROVED",
+        "FINALIZED",
+    }
+    display_verified_grade = verified_grade if show_verified_grade else ""
     
     return {
         **base,
@@ -401,7 +413,7 @@ def get_enhanced_sppu_pdf_data(appraisal: Appraisal) -> Dict:
             "total_taught": total_held,
             "percentage": f"{attendance_percentage:.2f}",
             "self_grade": teaching_grade,
-            "verified_grade": "",
+            "verified_grade": display_verified_grade,
         },
         
         # TABLE 1 - Activities
@@ -409,7 +421,7 @@ def get_enhanced_sppu_pdf_data(appraisal: Appraisal) -> Dict:
             "checkboxes": activities_checkboxes,
             "count": activity_count,
             "self_grade": activities_grade,
-            "verified_grade": "",
+            "verified_grade": display_verified_grade,
         },
         
         # TABLE 2 - Research Scoring
@@ -418,7 +430,8 @@ def get_enhanced_sppu_pdf_data(appraisal: Appraisal) -> Dict:
         
         # PART B - Assessment
         "part_b": {
-            "overall_grade": overall_grade,
+            "overall_grade": display_verified_grade or overall_grade,
+            "verified_grade": display_verified_grade,
             "hod_assessment": "",
             "justification": "",
             "hod_comments_table1": "",

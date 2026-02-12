@@ -6,6 +6,16 @@ from .data_mapper import get_common_pdf_data
 def get_sppu_pdf_data(appraisal: Appraisal) -> Dict:
     base = get_common_pdf_data(appraisal)
     raw = base.get("raw", {})
+    verified_grade = ""
+    if hasattr(appraisal, "appraisalscore"):
+        verified_grade = appraisal.appraisalscore.verified_grade or ""
+    show_verified_grade = appraisal.status in {
+        "HOD_APPROVED",
+        "REVIEWED_BY_PRINCIPAL",
+        "PRINCIPAL_APPROVED",
+        "FINALIZED",
+    }
+    display_verified_grade = verified_grade if show_verified_grade else ""
 
     teaching = raw.get("teaching", {})
     activities = raw.get("activities", {})
@@ -29,13 +39,13 @@ def get_sppu_pdf_data(appraisal: Appraisal) -> Dict:
             "total_taught": total_taught,
             "percentage": f"{percentage}%",
             "grade": teaching.get("grade", ""),
-            "verified_grade": "Good" if appraisal.principal else "",
+            "verified_grade": display_verified_grade,
         },
 
         "activities": {
             "list": activities.get("list", []),
             "grade": activities.get("grade", ""),
-            "verified_grade": "",
+            "verified_grade": display_verified_grade,
         },
 
         "research": {
@@ -49,6 +59,6 @@ def get_sppu_pdf_data(appraisal: Appraisal) -> Dict:
         },
 
         "scores": {
-            "overall_grade": scores.get("overall_grade", ""),
+            "overall_grade": display_verified_grade or scores.get("overall_grade", ""),
         },
     }

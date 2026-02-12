@@ -43,6 +43,30 @@ table, tr, td, th {
 .page-break {
     page-break-before: always;
 }
+
+.part-b {
+    font-family: "Times New Roman", serif;
+    font-size: 15px;
+}
+
+.part-b p {
+    margin: 6px 0;
+    line-height: 1.35;
+}
+
+.part-b .small {
+    font-size: 12px;
+}
+
+.part-b .ital {
+    font-style: italic;
+}
+
+.part-b-table th,
+.part-b-table td {
+    font-size: 15px;
+    padding: 6px 8px;
+}
 </style>
 </head>
 
@@ -199,53 +223,91 @@ Date : {{ signatures.teacher_date|default:"-" }}
 
 <!-- ================= PART B ================= -->
 
-<h2>PART ‘B’</h2>
+<div class="part-b">
+  <h2>PART 'B'</h2>
 
-<p><b>Overall Grading for TABLE 1</b></p>
+  <p class="small">
+    (Adverse remarks as well as appreciation of any outstanding work shall be brought to the notice of the person concerned by the Vice-Chancellor/Principal or Head of the University Department with a view to make improvement in the work, by the person concerned.)
+  </p>
 
-<table>
-<colgroup>
-  <col style="width:130mm">
-  <col style="width:50mm">
-</colgroup>
-<tr>
-<th>Assessment Criteria</th>
-<th>Verified Grade</th>
-</tr>
-<tr>
-<td>Good in teaching and satisfactory or good in activities</td>
-<td class="center">{{ scores.overall_grade }}</td>
-</tr>
-</table>
+  <p><b>1. (a) Assessment by the Principal(or Heads/ Head of the Department(for teachers) of the work done under each head of activity :</b></p>
+  <p><b>Overall Grading for TABLE 1</b></p>
+  <p><b>Assessment Criteria and Methodology for University Teachers</b></p>
 
-<br>
+  <table class="part-b-table">
+    <colgroup>
+      <col style="width:110mm">
+      <col style="width:35mm">
+      <col style="width:35mm">
+    </colgroup>
+    <tr>
+      <th>Assessment Criteria</th>
+      <th class="center">Overall Grading</th>
+      <th class="center">Verified Grade</th>
+    </tr>
+    <tr>
+      <td>Good in teaching and satisfactory or good in activity at Sl. No.2</td>
+      <td class="center"><b>Good</b></td>
+      <td class="center">
+        {% if scores.overall_grade == "Good" %}<b>{{ scores.overall_grade }}</b>{% else %}-{% endif %}
+      </td>
+    </tr>
+    <tr>
+      <td>Satisfactory in teaching and good or satisfactory in activity at Sl.No.2</td>
+      <td class="center"><b>Satisfactory</b></td>
+      <td class="center">
+        {% if scores.overall_grade == "Satisfactory" %}<b>{{ scores.overall_grade }}</b>{% else %}-{% endif %}
+      </td>
+    </tr>
+    <tr>
+      <td>If neither good nor satisfactory in overall grading</td>
+      <td class="center"><b>Not Satisfactory</b></td>
+      <td class="center">
+        {% if scores.overall_grade == "Not Satisfactory" %}<b>{{ scores.overall_grade }}</b>{% else %}-{% endif %}
+      </td>
+    </tr>
+  </table>
 
-<p><b>Justification (if not satisfactory):</b></p>
-<p>{{ remarks.justification|default:"-" }}</p>
+  <p class="small"><b>Note:</b></p>
+  <p class="small ital">
+    For the purpose of assessing the grading of Activity at Serial No.1 and Serial No.2, all such periods of duration which have been spent by the teacher on official and paid leaves such as Maternity Leave, Child Care Leave, Study Leave, Medical Leave, Extraordinary Leave and Deputation shall be excluded from the grading assessment.
+  </p>
+  <p class="small ital">
+    The teacher shall be assessed for the remaining period of duration and the same be extrapolated for the entire shall not be assessed for the grading of the teacher. The teacher on such leaves or deputation as mentioned above shall not be put to any disadvantage for promotion under CAS due to his/her absence from his/her teaching responsibilities subject to the condition that such leave/deputation was undertaken with the prior approval of the competent authority following all procedures laid down in these regulations and as per the acts, ordinances of the parent institution.
+  </p>
 
-<br>
+  <p><b>(b) Justification of assessment of work as not satisfactory:</b></p>
+  <p>{{ remarks.justification|default:"-" }}</p>
 
-<p><b>Comments of the Head of the Department:</b></p>
-<p>{{ remarks.hod_comments|default:"-" }}</p>
+  <p><b>3. Comments of the Head of the Department on Table 1 and Table 2:</b></p>
+  <p>{{ remarks.hod_comments|default:"-" }}</p>
 
-<br>
+  <p><b>4. Remarks and suggestions :</b></p>
+  <p>{{ remarks.principal|default:"-" }}</p>
 
-<p><b>Remarks of the Principal:</b></p>
-<p>{{ remarks.principal|default:"-" }}</p>
+  <table style="border:none; margin-top:35px;">
+    <colgroup>
+      <col style="width:90mm">
+      <col style="width:90mm">
+    </colgroup>
+    <tr>
+      <td style="border:none; text-align:center;">
+        <b>Signature</b><br>
+        <b>(Head of the Department)</b><br>
+        Date : {{ signatures.hod_date|default:"-" }}
+      </td>
+      <td style="border:none; text-align:center;">
+        <b>Signature</b><br>
+        <b>(Principal)</b><br>
+        Date : {{ signatures.principal_date|default:"-" }}
+      </td>
+    </tr>
+  </table>
 
-<br><br>
-
-<table style="border:none;">
-<colgroup>
-  <col style="width:180mm">
-</colgroup>
-<tr>
-<td style="border:none;">
-<b>Signature (Principal)</b><br>
-Date : {{ signatures.principal_date|default:"-" }}
-</td>
-</tr>
-</table>
+  <p style="margin-top:18px;"><b>Remarks of the Principal(Adverse remarks as well as remarks of appreciation)</b></p>
+</div>
 
 </body>
 </html>
+
+

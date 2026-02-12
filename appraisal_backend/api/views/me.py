@@ -15,10 +15,12 @@ class MeView(APIView):
         user = request.user
 
         profile_data = {}
+        date_of_joining = user.date_joined
 
         if user.role == "FACULTY":
             profile = FacultyProfile.objects.filter(user=user).first()
             if profile:
+                date_of_joining = profile.date_of_joining or user.date_joined
                 profile_data = {
                     "full_name": profile.full_name,
                     "designation": profile.designation,
@@ -27,7 +29,12 @@ class MeView(APIView):
 
         elif user.role == "HOD":
             profile = HODProfile.objects.filter(user=user).first()
+            faculty_profile = FacultyProfile.objects.filter(user=user).first()
             if profile:
+                date_of_joining = (
+                    (faculty_profile.date_of_joining if faculty_profile else None)
+                    or user.date_joined
+                )
                 profile_data = {
                     "full_name": profile.full_name,
                     "designation": "HOD",
@@ -50,6 +57,7 @@ class MeView(APIView):
             "role": user.role,
             "department": user.department,
             "date_joined": user.date_joined,
+            "date_of_joining": date_of_joining,
 
             **profile_data
         })

@@ -740,22 +740,32 @@
     <table>
         <thead>
             <tr>
-                <th style="width: 60%;"></th>
-                <th style="width: 40%;">Verified Grading</th>
+                <th style="width: 50%;">Assessment Criteria</th>
+                <th style="width: 25%;">Overall Grading</th>
+                <th style="width: 25%;">Verified Grade</th>
             </tr>
         </thead>
         <tbody>
             <tr>
                 <td>Good in teaching and satisfactory or good in activity at Sl. No.2</td>
                 <td class="center"><strong>Good</strong></td>
+                <td class="center">
+                    {% if part_b.verified_grade == "Good" %}<strong>{{ part_b.verified_grade }}</strong>{% else %}-{% endif %}
+                </td>
             </tr>
             <tr>
                 <td>Satisfactory in teaching and good or satisfactory in activity at Sl.No.2</td>
                 <td class="center"><strong>Satisfactory</strong></td>
+                <td class="center">
+                    {% if part_b.verified_grade == "Satisfactory" %}<strong>{{ part_b.verified_grade }}</strong>{% else %}-{% endif %}
+                </td>
             </tr>
             <tr>
                 <td>If neither good nor satisfactory in overall grading</td>
                 <td class="center"><strong>Not Satisfactory</strong></td>
+                <td class="center">
+                    {% if part_b.verified_grade == "Not Satisfactory" %}<strong>{{ part_b.verified_grade }}</strong>{% else %}-{% endif %}
+                </td>
             </tr>
         </tbody>
     </table>

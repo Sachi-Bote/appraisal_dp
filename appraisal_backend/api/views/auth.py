@@ -40,6 +40,29 @@ class LoginSerializer(TokenObtainPairSerializer):
 
         return token
 
+    def validate(self, attrs):
+        data = super().validate(attrs)
+        user = self.user
+
+        # Expose profile-relevant fields so frontend can map them immediately after login.
+        date_of_joining = None
+        faculty_profile = getattr(user, "facultyprofile", None)
+        if faculty_profile and faculty_profile.date_of_joining:
+            date_of_joining = faculty_profile.date_of_joining
+        else:
+            date_of_joining = user.date_joined
+
+        data["user"] = {
+            "id": user.id,
+            "username": user.username,
+            "email": user.email or user.username,
+            "role": user.role,
+            "department": user.department,
+            "date_of_joining": date_of_joining,
+            "date_joined": user.date_joined,
+        }
+        return data
+
 
 class LoginAPI(TokenObtainPairView):
     permission_classes = [AllowAny]

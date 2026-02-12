@@ -171,6 +171,15 @@ class AppraisalDetailAPI(APIView):
         if hasattr(appraisal, 'appraisalscore'):
             verified_grade = appraisal.appraisalscore.verified_grade
 
+        can_verify_grade = False
+        verifier_role = None
+        if is_hod and (not appraisal.is_hod_appraisal) and appraisal.status == States.REVIEWED_BY_HOD:
+            can_verify_grade = True
+            verifier_role = "HOD"
+        elif is_principal and appraisal.is_hod_appraisal and appraisal.status == States.REVIEWED_BY_PRINCIPAL:
+            can_verify_grade = True
+            verifier_role = "PRINCIPAL"
+
         return Response({
             "id": appraisal.appraisal_id,
             "status": appraisal.status,
@@ -179,6 +188,9 @@ class AppraisalDetailAPI(APIView):
             "appraisal_data": appraisal.appraisal_data,
             "remarks": appraisal.remarks,
             "verified_grade": verified_grade,
+            "can_verify_grade": can_verify_grade,
+            "verifier_role": verifier_role,
+            "verified_grade_options": ["Good", "Satisfactory", "Not Satisfactory"],
             "faculty": {
                 "name": appraisal.faculty.full_name,
                 "department": appraisal.faculty.department.department_name,

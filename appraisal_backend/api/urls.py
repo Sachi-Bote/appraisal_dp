@@ -10,6 +10,7 @@ from api.views.hod import (
     HODApproveAppraisal,
     HODReturnAppraisal,
     HODStartReviewAppraisal,
+    HODVerifyGradeAPI,
     HODSubmitAPI,
     HODResubmitAPI,
     HODAppraisalListAPI   # 👈 ADD THIS
@@ -20,6 +21,7 @@ from api.views.principal import(
     PrincipalStartReviewAPI,
     PrincipalReturnAPI,
     PrincipalFinalizeAPI,
+    PrincipalVerifyGradeAPI,
 )
 from api.views.me import MeView 
 from api.views.appraisal_views import (
@@ -70,6 +72,10 @@ urlpatterns = [
         HODApproveAppraisal.as_view()
     ),
     path(
+        "hod/appraisal/<int:appraisal_id>/verify-grade/",
+        HODVerifyGradeAPI.as_view()
+    ),
+    path(
         "hod/appraisal/<int:appraisal_id>/return/",
         HODReturnAppraisal.as_view()
     ),
@@ -82,6 +88,7 @@ urlpatterns = [
     path("principal/appraisal/<int:appraisal_id>/approve/",PrincipalApproveAPI.as_view()),
     path("principal/appraisals/", PrincipalAppraisalList.as_view()),
     path("principal/appraisal/<int:appraisal_id>/start-review/",PrincipalStartReviewAPI.as_view()),
+    path("principal/appraisal/<int:appraisal_id>/verify-grade/",PrincipalVerifyGradeAPI.as_view()),
     path("principal/appraisal/<int:appraisal_id>/return/", PrincipalReturnAPI.as_view()),
     path("principal/appraisal/<int:appraisal_id>/finalize/", PrincipalFinalizeAPI.as_view()),
     # OTHER

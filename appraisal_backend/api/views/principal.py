@@ -18,6 +18,8 @@ from django.db import transaction
 from core.utils.audit import log_action
 from django.db import transaction
 
+ALLOWED_VERIFIED_GRADES = {"Good", "Satisfactory", "Not Satisfactory"}
+
 
 class PrincipalApproveAPI(APIView):
     permission_classes = [IsAuthenticated, IsPrincipal]
@@ -33,6 +35,21 @@ class PrincipalApproveAPI(APIView):
                 {"error": "Appraisal not in principal review state"},
                 status=400
             )
+
+        # Verified-grade enforcement is only for HOD appraisals.
+        if appraisal.is_hod_appraisal is True:
+            score = AppraisalScore.objects.filter(appraisal=appraisal).first()
+            if not score or not score.verified_grade:
+                verified_grade = request.data.get("verified_grade")
+                if verified_grade not in ALLOWED_VERIFIED_GRADES:
+                    return Response(
+                        {"error": "Set verified grade first (after starting review) before approval"},
+                        status=400
+                    )
+                AppraisalScore.objects.update_or_create(
+                    appraisal=appraisal,
+                    defaults={"verified_grade": verified_grade}
+                )
 
         new_state = perform_action(
             current_state=appraisal.status,
@@ -55,18 +72,49 @@ class PrincipalApproveAPI(APIView):
             }
         )
 
-        # ✅ SAVE VERIFIED GRADE (if provided)
-        verified_grade = request.data.get("verified_grade")
-        if verified_grade:
-            AppraisalScore.objects.update_or_create(
-                appraisal=appraisal,
-                defaults={"verified_grade": verified_grade}
-            )
-
         return Response({
             "message": "Approved by Principal",
             "new_state": new_state
         })
+
+
+class PrincipalVerifyGradeAPI(APIView):
+    permission_classes = [IsAuthenticated, IsPrincipal]
+
+    def post(self, request, appraisal_id):
+        verified_grade = request.data.get("verified_grade")
+        if verified_grade not in ALLOWED_VERIFIED_GRADES:
+            return Response(
+                {"error": "verified_grade must be one of: Good, Satisfactory, Not Satisfactory"},
+                status=400
+            )
+
+        try:
+            appraisal = Appraisal.objects.get(appraisal_id=appraisal_id)
+        except Appraisal.DoesNotExist:
+            return Response({"error": "Appraisal not found"}, status=404)
+
+        if appraisal.is_hod_appraisal is not True:
+            return Response(
+                {"error": "Principal can verify grade for HOD appraisals only"},
+                status=400
+            )
+
+        if appraisal.status != States.REVIEWED_BY_PRINCIPAL:
+            return Response(
+                {"error": "Verified grade can be updated after Principal starts review"},
+                status=400
+            )
+
+        AppraisalScore.objects.update_or_create(
+            appraisal=appraisal,
+            defaults={"verified_grade": verified_grade}
+        )
+
+        return Response(
+            {"message": "Verified grade updated by Principal", "verified_grade": verified_grade},
+            status=200
+        )
 
     
 class PrincipalAppraisalList(APIView):
