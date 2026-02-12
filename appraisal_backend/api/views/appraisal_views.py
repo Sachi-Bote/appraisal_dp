@@ -167,6 +167,10 @@ class AppraisalDetailAPI(APIView):
         if not (is_owner or is_principal or is_hod):
             return Response({"error": "Unauthorized access"}, status=403)
 
+        verified_grade = None
+        if hasattr(appraisal, 'appraisalscore'):
+            verified_grade = appraisal.appraisalscore.verified_grade
+
         return Response({
             "id": appraisal.appraisal_id,
             "status": appraisal.status,
@@ -174,6 +178,7 @@ class AppraisalDetailAPI(APIView):
             "semester": appraisal.semester,
             "appraisal_data": appraisal.appraisal_data,
             "remarks": appraisal.remarks,
+            "verified_grade": verified_grade,
             "faculty": {
                 "name": appraisal.faculty.full_name,
                 "department": appraisal.faculty.department.department_name,

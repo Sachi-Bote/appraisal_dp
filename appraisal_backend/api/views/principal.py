@@ -8,7 +8,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 
 from api.permissions import IsPrincipal
-from core.models import Appraisal
+from core.models import Appraisal, AppraisalScore
 from workflow.states import States
 from workflow.engine import perform_action
 from core.models import ApprovalHistory
@@ -54,6 +54,14 @@ class PrincipalApproveAPI(APIView):
                 "remarks": None
             }
         )
+
+        # ✅ SAVE VERIFIED GRADE (if provided)
+        verified_grade = request.data.get("verified_grade")
+        if verified_grade:
+            AppraisalScore.objects.update_or_create(
+                appraisal=appraisal,
+                defaults={"verified_grade": verified_grade}
+            )
 
         return Response({
             "message": "Approved by Principal",

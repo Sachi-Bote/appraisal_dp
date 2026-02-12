@@ -148,7 +148,7 @@ sample_data = {
         "society": 6
     },
     "acr": {
-        "grade": "Outstanding"
+        "grade": 7.5
     }
 }
 
@@ -237,7 +237,13 @@ def test_enhanced_pdfs():
         print(f"    - Society activities: {len(pbas_context.get('society_activities', {}).get('entries', []))}")
         print(f"    - Research entries: {len(pbas_context.get('research', {}).get('entries', []))}")
         print(f"    - ACR Grade: {pbas_context.get('acr', {}).get('grade')}")
+        print(f"    - ACR Enclosure: {pbas_context.get('acr', {}).get('enclosure_no')}")
         print(f"    - Total score: {pbas_context.get('scores', {}).get('total_score')}")
+
+        with open("verification.txt", "w") as verification_file:
+            verification_file.write(f"ACR Grade: {pbas_context.get('acr', {}).get('grade')}\n")
+            verification_file.write(f"ACR Enclosure: {pbas_context.get('acr', {}).get('enclosure_no')}\n")
+            verification_file.write(f"Total Score: {pbas_context.get('scores', {}).get('total_score')}\n")
         
         pbas_pdf = render_to_pdf("pdf/enhanced_pbas.html", pbas_context)
         

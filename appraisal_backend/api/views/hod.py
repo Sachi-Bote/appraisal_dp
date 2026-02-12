@@ -368,6 +368,14 @@ class HODApproveAppraisal(APIView):
         appraisal.status = new_state
         appraisal.save()
 
+        # ✅ SAVE VERIFIED GRADE (if provided)
+        verified_grade = request.data.get("verified_grade")
+        if verified_grade:
+            AppraisalScore.objects.update_or_create(
+                appraisal=appraisal,
+                defaults={"verified_grade": verified_grade}
+            )
+
         ApprovalHistory.objects.update_or_create(
             appraisal=appraisal,
             role="HOD",

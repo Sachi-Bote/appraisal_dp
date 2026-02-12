@@ -179,7 +179,16 @@ def get_enhanced_pbas_pdf_data(appraisal: Appraisal) -> Dict:
             calculated_scores.get("teaching", {}).get("score", 0),
         )
 
+    # ✅ FETCH VERIFIED GRADE
+    verified_grade = ""
+    try:
+        if hasattr(appraisal, 'appraisalscore'):
+            verified_grade = appraisal.appraisalscore.verified_grade
+    except Exception:
+        pass
+
     return {
+        "verified_grade": verified_grade,
         **base,
         "faculty_ext": {
             "name": _get_first(general, ["faculty_name", "name"], base["faculty"]["name"]),
@@ -223,8 +232,9 @@ def get_enhanced_pbas_pdf_data(appraisal: Appraisal) -> Dict:
             "verified": "",
         },
         "acr": {
-            "grade": _get_first(acr, ["grade"], ""),
-            "score": acr_score,
+            "grade": calculated_scores.get("acr", {}).get("grade") or _get_first(acr, ["grade"], ""),
+            "score": calculated_scores.get("acr", {}).get("credit_point") or acr_score,
+            "enclosure_no": _get_first(acr, ["enclosure_no", "enclosure", "enclosureNo"], ""),
         },
         "pbas_section_scores": {
             "teaching_process": teaching_section_score,

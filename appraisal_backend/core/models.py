@@ -313,6 +313,9 @@ class AppraisalScore(models.Model):
         decimal_places=2,
         default=Decimal("0.00")
     )
+    # ✅ ADD THIS
+    verified_grade = models.CharField(max_length=50, null=True, blank=True)
+
     total_score = models.DecimalField(max_digits=6, decimal_places=2, null=True)
     calculated_at = models.DateTimeField(default=timezone.now)
 

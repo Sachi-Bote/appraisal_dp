@@ -225,15 +225,7 @@ ACR_GRADE_SCORE_MAP = {
 
 
 def calculate_institute_acr_score(grade) -> dict:
-    # If explicitly numeric, treat as direct score
-    if isinstance(grade, (int, float)):
-        return {
-            "activity": "ACR",
-            "grade": str(grade),
-            "credit_point": Decimal(str(grade)),
-        }
-
-    # If string, try to parse or map
+    # Convert to string to handle both numbers and strings uniformly
     grade_str = str(grade).strip().upper()
 
     # Try mapping first
@@ -246,12 +238,32 @@ def calculate_institute_acr_score(grade) -> dict:
 
     # Fallback: try parsing as number
     try:
-        val = Decimal(grade_str)
-        return {
-            "activity": "ACR",
-            "grade": grade_str,
-            "credit_point": val,
-        }
+        val = float(grade_str)
+        # Apply the requested naming scheme logic
+        if 8 <= val <= 10:
+            return {
+                "activity": "ACR",
+                "grade": "A+",
+                "credit_point": Decimal("10"),
+            }
+        elif 6 <= val < 8:
+            return {
+                "activity": "ACR",
+                "grade": "A",
+                "credit_point": Decimal("8"),
+            }
+        elif 4 <= val < 6:
+            return {
+                "activity": "ACR",
+                "grade": "B",
+                "credit_point": Decimal("6"),
+            }
+        else: # val < 4
+            return {
+                "activity": "ACR",
+                "grade": "C",
+                "credit_point": Decimal("4"),
+            }
     except:
         return {
             "activity": "ACR",
