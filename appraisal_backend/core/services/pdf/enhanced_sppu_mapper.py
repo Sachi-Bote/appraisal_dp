@@ -402,6 +402,15 @@ def get_enhanced_sppu_pdf_data(appraisal: Appraisal) -> Dict:
         "FINALIZED",
     }
     display_verified_grade = verified_grade if show_verified_grade else ""
+
+    hod_review = raw.get("hod_review", {})
+    if not isinstance(hod_review, dict):
+        hod_review = {}
+    hod_comments_table1 = hod_review.get("comments_table1", "") or ""
+    hod_comments_table2 = hod_review.get("comments_table2", "") or ""
+    hod_remarks = hod_review.get("remarks_suggestions", "") or ""
+    justification = hod_review.get("justification", "") or ""
+    principal_remarks = appraisal.remarks or ""
     
     return {
         **base,
@@ -433,9 +442,11 @@ def get_enhanced_sppu_pdf_data(appraisal: Appraisal) -> Dict:
             "overall_grade": display_verified_grade or overall_grade,
             "verified_grade": display_verified_grade,
             "hod_assessment": "",
-            "justification": "",
-            "hod_comments_table1": "",
-            "hod_comments_table2": "",
+            "justification": justification,
+            "hod_comments_table1": hod_comments_table1,
+            "hod_comments_table2": hod_comments_table2,
+            "hod_remarks": hod_remarks,
+            "principal_remarks": principal_remarks,
         },
         
         # Metadata

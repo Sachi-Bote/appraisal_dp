@@ -11,10 +11,31 @@ from scoring.engine import calculate_full_score
 from validation.master_validator import validate_full_form
 from django.db import transaction
 from api.serializers import AppraisalSerializer
-from core.models import FacultyProfile, Appraisal, AppraisalScore, User
+from core.models import FacultyProfile, Appraisal, AppraisalScore, User, HODProfile
 from core.utils.audit import log_action
 
 ALLOWED_VERIFIED_GRADES = {"Good", "Satisfactory", "Not Satisfactory"}
+
+
+def _get_hod_department(user):
+    """
+    Resolve HOD department primarily via Department.hod and fallback to HODProfile.
+    Keeps existing data model behavior while supporting legacy records.
+    """
+    department = Department.objects.filter(hod=user).first()
+    if department:
+        return department
+
+    hod_profile = HODProfile.objects.select_related("department").filter(user=user).first()
+    if not hod_profile:
+        return None
+
+    # Best-effort sync so subsequent requests use Department.hod path.
+    if hod_profile.department.hod_id != user.id:
+        hod_profile.department.hod = user
+        hod_profile.department.save(update_fields=["hod"])
+
+    return hod_profile.department
 
 
 class HODSubmitAPI(APIView):
@@ -129,7 +150,9 @@ class HODAppraisalListAPI(APIView):
     permission_classes = [IsAuthenticated, IsHOD]
 
     def get(self, request):
-        faculty = FacultyProfile.objects.get(user=request.user)
+        faculty = FacultyProfile.objects.filter(user=request.user).first()
+        if not faculty:
+            return Response({"error": "Faculty profile not found for HOD"}, status=400)
 
         appraisals = Appraisal.objects.filter(
             faculty=faculty,
@@ -147,7 +170,9 @@ class HODResubmitAPI(APIView):
 
     @transaction.atomic
     def post(self, request, appraisal_id):
-        faculty = FacultyProfile.objects.get(user=request.user)
+        faculty = FacultyProfile.objects.filter(user=request.user).first()
+        if not faculty:
+            return Response({"error": "Faculty profile not found for HOD"}, status=400)
 
         appraisal = Appraisal.objects.get(
             appraisal_id=appraisal_id,
@@ -232,9 +257,8 @@ class HODStartReviewAppraisal(APIView):
             return Response({"error": "Appraisal not found"}, status=404)
 
         # 2️⃣ Fetch HOD department
-        try:
-            department = Department.objects.get(hod=request.user)
-        except Department.DoesNotExist:
+        department = _get_hod_department(request.user)
+        if not department:
             return Response(
                 {"error": "HOD is not assigned to any department"},
                 status=400
@@ -276,10 +300,10 @@ class HODAppraisalList(APIView):
     permission_classes = [IsAuthenticated, IsHOD]
 
     def get(self, request):
-        try:
-            department = Department.objects.get(hod=request.user)
+        department = _get_hod_department(request.user)
+        if department:
             print(f"DEBUG: HOD {request.user.username} found for department {department.department_name}")
-        except Department.DoesNotExist:
+        else:
             print(f"DEBUG: HOD {request.user.username} NOT linked to any department")
             return Response(
                 {"error": "HOD is not assigned to any department"},
@@ -340,9 +364,8 @@ class HODApproveAppraisal(APIView):
             return Response({"error": "Appraisal not found"}, status=404)
 
         # 🔒 Department check
-        try:
-            department = Department.objects.get(hod=request.user)
-        except Department.DoesNotExist:
+        department = _get_hod_department(request.user)
+        if not department:
             return Response(
                 {"error": "HOD is not assigned to any department"},
                 status=400
@@ -381,6 +404,17 @@ class HODApproveAppraisal(APIView):
                 appraisal=appraisal,
                 defaults={"verified_grade": verified_grade}
             )
+
+        # Save HOD review comments in appraisal JSON for enhanced SPPU Part B.
+        appraisal_data = appraisal.appraisal_data if isinstance(appraisal.appraisal_data, dict) else {}
+        hod_review = appraisal_data.get("hod_review", {})
+        if not isinstance(hod_review, dict):
+            hod_review = {}
+        hod_review["comments_table1"] = request.data.get("hod_comments_table1", "") or ""
+        hod_review["comments_table2"] = request.data.get("hod_comments_table2", "") or ""
+        hod_review["remarks_suggestions"] = request.data.get("hod_remarks", "") or ""
+        appraisal_data["hod_review"] = hod_review
+        appraisal.appraisal_data = appraisal_data
 
         # ✅ Approve
         new_state = perform_action(
@@ -425,9 +459,8 @@ class HODVerifyGradeAPI(APIView):
         except Appraisal.DoesNotExist:
             return Response({"error": "Appraisal not found"}, status=404)
 
-        try:
-            department = Department.objects.get(hod=request.user)
-        except Department.DoesNotExist:
+        department = _get_hod_department(request.user)
+        if not department:
             return Response(
                 {"error": "HOD is not assigned to any department"},
                 status=400
@@ -452,9 +485,9 @@ class HODVerifyGradeAPI(APIView):
             )
 
         AppraisalScore.objects.update_or_create(
-            appraisal=appraisal,
-            defaults={"verified_grade": verified_grade}
-        )
+                appraisal=appraisal,
+                defaults={"verified_grade": verified_grade}
+            )
 
         return Response(
             {"message": "Verified grade updated by HOD", "verified_grade": verified_grade},
@@ -479,9 +512,8 @@ class HODReturnAppraisal(APIView):
         except Appraisal.DoesNotExist:
             return Response({"error": "Appraisal not found"}, status=404)
 
-        try:
-            department = Department.objects.get(hod=request.user)
-        except Department.DoesNotExist:
+        department = _get_hod_department(request.user)
+        if not department:
             return Response(
                 {"error": "HOD is not assigned to any department"},
                 status=400

@@ -15,14 +15,14 @@ class CurrentFacultyAppraisalAPIView(APIView):
 
     def get(self, request):
         faculty = getattr(request.user, 'faculty_profile', None) or getattr(request.user, 'facultyprofile', None)
-        
+
         if not faculty:
             return Response({"error": "Faculty profile not found"}, status=400)
 
         is_hod = request.query_params.get("is_hod") == "true"
 
         from django.db.models import Case, When, Value, IntegerField
-        
+
         appraisal = (
             Appraisal.objects
             .filter(
@@ -68,11 +68,11 @@ class FacultyAppraisalStatusAPI(APIView):
     def get(self, request):
         try:
             faculty = request.user.facultyprofile
-        except:
-             # Fallback for HOD who might not have a facultyprofile named exactly like that
-             # though FacultyProfile objects usually use faculty_profile related_name
-             faculty = getattr(request.user, 'facultyprofile', None) or getattr(request.user, 'faculty_profile', None)
-             
+        except Exception:
+            # Fallback for HOD who might not have a facultyprofile named exactly like that
+            # though FacultyProfile objects usually use faculty_profile related_name
+            faculty = getattr(request.user, 'facultyprofile', None) or getattr(request.user, 'faculty_profile', None)
+
         if not faculty:
             return Response({"error": "Faculty profile not found"}, status=404)
 
@@ -90,9 +90,10 @@ class FacultyAppraisalStatusAPI(APIView):
                 "academic_year": a.academic_year,
                 "submitted_date": a.created_at.strftime("%d %b %Y"),
                 "remarks": a.remarks,
+                "workflow_state": a.status,
             }
 
-            # 🔁 UNDER REVIEW STATES
+            # UNDER REVIEW STATES
             if a.status in [
                 States.SUBMITTED,
                 States.REVIEWED_BY_HOD,
@@ -105,7 +106,7 @@ class FacultyAppraisalStatusAPI(APIView):
                     "status": "Under Review",
                 })
 
-            # 🔴 RETURNED
+            # RETURNED
             elif a.status in [
                 States.RETURNED_BY_HOD,
                 States.RETURNED_BY_PRINCIPAL,
@@ -116,15 +117,21 @@ class FacultyAppraisalStatusAPI(APIView):
                     "status": "Changes Requested",
                 })
 
-            # 🟢 APPROVED
+            # APPROVED
             elif a.status in [
                 States.PRINCIPAL_APPROVED,
                 States.FINALIZED,
             ]:
+                base_download_url = f"/api/appraisal/{a.appraisal_id}"
                 approved.append({
                     **base_data,
                     "current_level": "Completed",
                     "status": "Approved",
+                    "download_available": True,
+                    "download_urls": {
+                        "sppu": f"{base_download_url}/pdf/sppu-enhanced/",
+                        "pbas": f"{base_download_url}/pdf/pbas-enhanced/",
+                    },
                 })
 
         return Response({
@@ -138,7 +145,7 @@ class FacultyAppraisalStatusAPI(APIView):
             return "HOD"
         if state in [States.HOD_APPROVED, States.REVIEWED_BY_PRINCIPAL]:
             return "Principal"
-        return "—"
+        return "-"
 
 
 class AppraisalDetailAPI(APIView):
@@ -153,7 +160,7 @@ class AppraisalDetailAPI(APIView):
         # Basic permission check
         is_owner = appraisal.faculty.user == request.user
         is_principal = request.user.role == "PRINCIPAL"
-        
+
         is_hod = False
         if request.user.role == "HOD":
             from core.models import Department
@@ -198,8 +205,39 @@ class AppraisalDetailAPI(APIView):
             }
         })
 
+
 class DownloadAppraisalPDF(APIView):
     permission_classes = [IsAuthenticated]
+
+    @staticmethod
+    def _ensure_finalized_pdfs(appraisal):
+        if appraisal.status not in [States.PRINCIPAL_APPROVED, States.FINALIZED]:
+            return
+
+        has_sppu = GeneratedPDF.objects.filter(
+            appraisal=appraisal,
+            pdf_path__icontains="SPPU_PBAS_appraisal_"
+        ).exists()
+        has_pbas = GeneratedPDF.objects.filter(
+            appraisal=appraisal,
+            pdf_path__icontains="AICTE_PBAS_appraisal_"
+        ).exists()
+
+        if not has_sppu:
+            from core.services.pdf.sppu_mapper import get_sppu_pdf_data
+            from core.services.pdf.html_pdf import generate_pdf_from_html
+            from core.services.pdf.save import save_pdf
+            sppu_data = get_sppu_pdf_data(appraisal)
+            sppu_pdf = generate_pdf_from_html("pdf/sppu_pbas_form.html", sppu_data)
+            save_pdf(appraisal, sppu_pdf, "SPPU_PBAS")
+
+        if not has_pbas:
+            from core.services.pdf.pbas_mapper import get_pbas_pdf_data
+            from core.services.pdf.html_pdf import generate_pdf_from_html
+            from core.services.pdf.save import save_pdf
+            pbas_data = get_pbas_pdf_data(appraisal)
+            pbas_pdf = generate_pdf_from_html("pdf/aicte_pbas_form.html", pbas_data)
+            save_pdf(appraisal, pbas_pdf, "AICTE_PBAS")
 
     def get(self, request, appraisal_id):
         try:
@@ -207,10 +245,9 @@ class DownloadAppraisalPDF(APIView):
         except Appraisal.DoesNotExist:
             return Response({"error": "Appraisal not found"}, status=404)
 
-        # 1️⃣ Permission Check
         is_owner = appraisal.faculty.user == request.user
         is_principal = request.user.role == "PRINCIPAL"
-        
+
         is_hod = False
         if request.user.role == "HOD":
             # Simple check if HOD manages this faculty's department
@@ -220,22 +257,35 @@ class DownloadAppraisalPDF(APIView):
         if not (is_owner or is_principal or is_hod):
             return Response({"error": "Unauthorized"}, status=403)
 
-        # 2️⃣ Check for Generated PDF
+        # Default keeps old behavior (SPPU). Caller can request ?pdf_type=PBAS.
+        requested_type = (request.query_params.get("pdf_type") or "SPPU").upper()
+        pattern = "AICTE_PBAS" if requested_type == "PBAS" else "SPPU_PBAS"
+
+        # Ensure finalized/principal-approved appraisals are downloadable.
+        self._ensure_finalized_pdfs(appraisal)
+
         try:
-            # We explicitly look for SPPU form as it is the primary one
             pdf_record = GeneratedPDF.objects.filter(
-                appraisal=appraisal, 
-                pdf_path__icontains="SPPU_PBAS"
-            ).latest('generated_at')
-            
+                appraisal=appraisal,
+                pdf_path__icontains=pattern
+            ).latest("generated_at")
+
             if not os.path.exists(pdf_record.pdf_path):
-                 return Response({"error": "PDF file not found on server"}, status=404)
-                 
-            return FileResponse(open(pdf_record.pdf_path, 'rb'), content_type='application/pdf')
+                # Retry once for completed appraisals if file is missing.
+                self._ensure_finalized_pdfs(appraisal)
+                pdf_record = GeneratedPDF.objects.filter(
+                    appraisal=appraisal,
+                    pdf_path__icontains=pattern
+                ).latest("generated_at")
+                if not os.path.exists(pdf_record.pdf_path):
+                    return Response({"error": "PDF file not found on server"}, status=404)
+
+            return FileResponse(open(pdf_record.pdf_path, "rb"), content_type="application/pdf")
         except GeneratedPDF.DoesNotExist:
-             # Fallback to any PDF if SPPU specific one not found
-             try:
-                 pdf_record = GeneratedPDF.objects.filter(appraisal=appraisal).latest('generated_at')
-                 return FileResponse(open(pdf_record.pdf_path, 'rb'), content_type='application/pdf')
-             except GeneratedPDF.DoesNotExist:
-                 return Response({"error": "PDF not generated yet"}, status=404)
+            # Backward-compatible fallback to any generated PDF.
+            try:
+                self._ensure_finalized_pdfs(appraisal)
+                pdf_record = GeneratedPDF.objects.filter(appraisal=appraisal).latest("generated_at")
+                return FileResponse(open(pdf_record.pdf_path, "rb"), content_type="application/pdf")
+            except GeneratedPDF.DoesNotExist:
+                return Response({"error": "PDF not generated yet"}, status=404)
