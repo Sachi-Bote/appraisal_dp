@@ -28,8 +28,7 @@ def _save_pdf_and_return_response(appraisal, template_path, context, filename):
         response = HttpResponse(pdf_content, content_type='application/pdf')
         response['Content-Disposition'] = f'attachment; filename="{filename}"'
         return response
-    except Exception as e:
-        print(f"Error saving PDF: {e}")
+    except Exception:
         return render_to_pdf(template_path, context)
 
 

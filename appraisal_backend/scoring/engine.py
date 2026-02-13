@@ -7,7 +7,7 @@ from scoring.teaching import (
     calculate_sppu_teaching_score,
     SPPU_ATTENDANCE_SCORE_MAP,
 )
-from decimal import Decimal, ROUND_HALF_UP
+from decimal import Decimal
 from scoring.activities import (
     calculate_sppu_activity_score,
     calculate_departmental_activity_score,
@@ -43,13 +43,7 @@ def calculate_full_score(payload: dict) -> dict:
         teaching_result_sppu["rating"], 0
     )
 )
-    print("\n========== TEACHING DEBUG ==========")
-    print("Total classes assigned:", aggregated["total_scheduled"])
-    print("Classes taught:", aggregated["total_held"])
-    print("Attendance %:", teaching_result["attendance_percentage"])
-    print("Teaching score:", teaching_result["score"])
-
-
+    
     # ✅ SPPU Activities (Yes / No)
     sppu_activity_result = calculate_sppu_activity_score(
         payload.get("activities", {})

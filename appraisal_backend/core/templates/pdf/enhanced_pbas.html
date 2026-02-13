@@ -109,8 +109,7 @@
             <td>3</td>
             <td>Date of Joining and Name of the Department / Centre</td>
             <td>:</td>
-            <td>{{ faculty_ext.date_of_joining|default:"-" }} / {{
-                faculty_ext.department_center|default:faculty.department }}</td>
+            <td>{% firstof faculty_ext.date_of_joining "-" %} / {% firstof faculty_ext.department_center faculty.department "-" %}</td>
         </tr>
         <tr>
             <td>4</td>

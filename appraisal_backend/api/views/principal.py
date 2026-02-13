@@ -15,8 +15,6 @@ from core.models import ApprovalHistory
 from core.services.pdf.save import save_pdf
 from core.utils.audit import log_action
 from django.db import transaction
-from core.utils.audit import log_action
-from django.db import transaction
 
 ALLOWED_VERIFIED_GRADES = {"Good", "Satisfactory", "Not Satisfactory"}
 
@@ -25,6 +23,11 @@ class PrincipalApproveAPI(APIView):
     permission_classes = [IsAuthenticated, IsPrincipal]
 
     def post(self, request, appraisal_id):
+        payload_remarks = request.data.get("principal_remarks")
+        if payload_remarks is None and "remarks" in request.data:
+            payload_remarks = request.data.get("remarks")
+        principal_remarks = str(payload_remarks).strip() if payload_remarks is not None else None
+
         try:
             appraisal = Appraisal.objects.get(appraisal_id=appraisal_id)
         except Appraisal.DoesNotExist:
@@ -58,6 +61,16 @@ class PrincipalApproveAPI(APIView):
 
         appraisal.status = new_state
         appraisal.principal = request.user
+        if principal_remarks is not None:
+            appraisal.remarks = principal_remarks
+
+            appraisal_data = appraisal.appraisal_data or {}
+            principal_review = appraisal_data.get("principal_review", {})
+            if not isinstance(principal_review, dict):
+                principal_review = {}
+            principal_review["remarks"] = principal_remarks
+            appraisal_data["principal_review"] = principal_review
+            appraisal.appraisal_data = appraisal_data
         appraisal.save()
 
         ApprovalHistory.objects.update_or_create(
@@ -68,13 +81,14 @@ class PrincipalApproveAPI(APIView):
                 "action": "APPROVED",
                 "from_state": States.REVIEWED_BY_PRINCIPAL,
                 "to_state": new_state,
-                "remarks": None
+                "remarks": appraisal.remarks
             }
         )
 
         return Response({
             "message": "Approved by Principal",
-            "new_state": new_state
+            "new_state": new_state,
+            "remarks": appraisal.remarks or "",
         })
 
 

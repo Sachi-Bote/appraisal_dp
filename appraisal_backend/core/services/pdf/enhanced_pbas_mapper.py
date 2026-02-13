@@ -3,6 +3,7 @@ from core.models import Appraisal
 from .data_mapper import get_common_pdf_data
 from scoring.engine import calculate_full_score
 from decimal import Decimal
+import re
 
 
 def _get_first(data, keys, default=None):
@@ -37,10 +38,41 @@ def _to_int(value, default=0):
         return int(default)
 
 
+def _has_meaningful_research_data(entry: Dict) -> bool:
+    if not isinstance(entry, dict):
+        return False
+    title = str(entry.get("title", "")).strip()
+    name = str(entry.get("name", "")).strip()
+    activity = str(entry.get("activity", "")).strip()
+    year = str(entry.get("year", "")).strip()
+    enclosure_no = str(entry.get("enclosure_no", "")).strip()
+    enclosure = str(entry.get("enclosure", "")).strip()
+    if not any([title, name, activity, year, enclosure_no, enclosure]):
+        return False
+    if title.lower() == "award" and not any([year, enclosure_no, enclosure]):
+        return False
+    return True
+
+
 def _humanize_key(value: str) -> str:
     if not value:
         return ""
     return str(value).replace("_", " ").strip().title()
+
+
+def _clean_promotion_due_text(value) -> str:
+    text = str(value or "").strip()
+    if not text:
+        return ""
+    dates = re.findall(r"\d{4}-\d{2}-\d{2}", text)
+    unique_dates = []
+    for d in dates:
+        if d not in unique_dates:
+            unique_dates.append(d)
+    non_date_text = re.sub(r"\d{4}-\d{2}-\d{2}", " ", text)
+    non_date_text = re.sub(r"\s+", " ", non_date_text).strip()
+    combined = " ".join(part for part in [non_date_text, " ".join(unique_dates[:2])] if part).strip()
+    return combined or text
 
 
 def get_enhanced_pbas_pdf_data(appraisal: Appraisal) -> Dict:
@@ -146,6 +178,8 @@ def get_enhanced_pbas_pdf_data(appraisal: Appraisal) -> Dict:
         if not isinstance(entry, dict):
             continue
         entry_type = _get_first(entry, ["type", "category"], "")
+        if not str(entry_type).strip() or not _has_meaningful_research_data(entry):
+            continue
         title_value = _get_first(entry, ["title", "name", "activity"], "-")
         normalized_research_entries.append({
             **entry,
@@ -198,7 +232,9 @@ def get_enhanced_pbas_pdf_data(appraisal: Appraisal) -> Dict:
             "communication_address": _get_first(general, ["communication_address", "address"], ""),
             "email_mobile": f'{_get_first(general, ["email"], base["faculty"]["email"])} / {_get_first(general, ["mobile", "phone"], base["faculty"]["mobile"])}',
             "present_designation_grade_pay": _get_first(general, ["present_designation_grade_pay", "grade_pay", "gradePay"], ""),
-            "promotion_designation_due_date": _get_first(general, ["promotion_designation_due_date", "promotion_designation", "promotion_due_date"], ""),
+            "promotion_designation_due_date": _clean_promotion_due_text(
+                _get_first(general, ["promotion_designation_due_date", "promotion_designation", "promotion_due_date"], "")
+            ),
             "assessment_period": _get_first(general, ["assessment_period"], base.get("period", "")),
         },
         "teaching": {

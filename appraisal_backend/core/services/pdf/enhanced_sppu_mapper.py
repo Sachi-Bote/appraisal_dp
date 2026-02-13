@@ -32,23 +32,29 @@ def _get_first_key(data: Dict, keys: List[str], default=False):
     return default
 
 
+def _has_meaningful_research_data(entry: Dict) -> bool:
+    """Ignore placeholder rows that carry only default structure."""
+    if not isinstance(entry, dict):
+        return False
+    title = str(entry.get("title", "")).strip()
+    name = str(entry.get("name", "")).strip()
+    activity = str(entry.get("activity", "")).strip()
+    year = str(entry.get("year", "")).strip()
+    enclosure_no = str(entry.get("enclosure_no", "")).strip()
+    enclosure = str(entry.get("enclosure", "")).strip()
+    if not any([title, name, activity, year, enclosure_no, enclosure]):
+        return False
+    if title.lower() == "award" and not any([year, enclosure_no, enclosure]):
+        return False
+    return True
+
+
 def _build_activity_flags(raw: Dict) -> Dict[str, bool]:
     """
     Resolve activity flags from multiple payload shapes used by frontend versions.
     Priority: explicit per-activity fields. Category-derived mapping is optional.
     """
-    # DEBUG: Log input structure
-    print("\n" + "="*80)
-    print("DEBUG: _build_activity_flags called")
-    print("="*80)
-    print(f"Raw dict keys: {list(raw.keys())}")
-    
     activities = raw.get("activities", {})
-    print(f"\nActivities section type: {type(activities)}")
-    if isinstance(activities, dict):
-        print(f"Activities keys: {list(activities.keys())}")
-        print(f"Activities values: {activities}")
-    
     sources = []
     if isinstance(activities, dict):
         sources.append(activities)
@@ -70,8 +76,6 @@ def _build_activity_flags(raw: Dict) -> Dict[str, bool]:
                 sources.append(section_activities)
             sources.append(section)
 
-    print(f"\nTotal sources to search: {len(sources)}")
-    
     key_aliases = {
         "a_administrative": ["administrative_responsibility", "administrativeResponsibilities", "administrative", "a", "activity_a"],
         "b_exam_duties": ["exam_duties", "examDuties", "examination_duties", "examinationDuties", "b", "activity_b"],
@@ -84,11 +88,7 @@ def _build_activity_flags(raw: Dict) -> Dict[str, bool]:
 
     resolved = {k: None for k in key_aliases}
 
-    for idx, src in enumerate(sources):
-        print(f"\nSearching source {idx}: {type(src)}")
-        if isinstance(src, dict):
-            print(f"  Source keys: {list(src.keys())}")
-        
+    for src in sources:
         if not isinstance(src, dict):
             continue
         for target, aliases in key_aliases.items():
@@ -98,23 +98,15 @@ def _build_activity_flags(raw: Dict) -> Dict[str, bool]:
                 if alias in src:
                     value = src.get(alias)
                     resolved[target] = _to_bool(value)
-                    print(f"  FOUND: {alias} = {value} -> {resolved[target]} (for {target})")
                     break
 
     # Optional legacy mapping: derive from departmental/institute/society if explicit flags are absent.
     if all(v is None for v in resolved.values()):
-        print("\n*** WARNING: No individual activities found!")
-        print("This shouldn't happen with current frontend - check data structure")
         use_legacy_derivation = False  # DISABLED - frontend should send individual flags
         if use_legacy_derivation and isinstance(activities, dict):
             departmental = _to_bool(_get_first_key(activities, ["departmental", "departmental_activities", "departmentalActivities"], False))
             institute = _to_bool(_get_first_key(activities, ["institute", "institute_activities", "instituteActivities"], False))
             society = _to_bool(_get_first_key(activities, ["society", "society_activities", "societyActivities"], False))
-            
-            print(f"  Departmental flag: {departmental}")
-            print(f"  Institute flag: {institute}")
-            print(f"  Society flag: {society}")
-            
             resolved = {
                 "a_administrative": departmental,
                 "b_exam_duties": departmental,
@@ -125,9 +117,6 @@ def _build_activity_flags(raw: Dict) -> Dict[str, bool]:
                 "g_sponsored_project": institute,
             }
 
-    print(f"\nFinal resolved values: {resolved}")
-    print("="*80 + "\n")
-    
     # Ensure None values are converted to False
     return {k: bool(v) if v is not None else False for k, v in resolved.items()}
 
@@ -136,7 +125,6 @@ def get_enhanced_sppu_pdf_data(appraisal: Appraisal) -> Dict:
     """
     Extract data for SPPU PDF matching official format with Table 1 & Table 2.
     """
-    print(f"\n*** PROCESSING APPRAISAL ID: {appraisal.appraisal_id} ***")
     base = get_common_pdf_data(appraisal)
     raw = base.get("raw", {})
     
@@ -256,8 +244,17 @@ def get_enhanced_sppu_pdf_data(appraisal: Appraisal) -> Dict:
     
     # Map research entries to Table 2 categories
     for entry in research_entries:
-        entry_type = entry.get("type", "").lower()
-        count = int(entry.get("count", 1))
+        if not isinstance(entry, dict):
+            continue
+        entry_type = str(entry.get("type", "")).strip().lower()
+        if not entry_type or not _has_meaningful_research_data(entry):
+            continue
+        try:
+            count = int(float(entry.get("count", 0)))
+        except (TypeError, ValueError):
+            count = 0
+        if count <= 0:
+            continue
         
         # Category 1: Research Papers (handle various journal naming patterns)
         if ("journal" in entry_type or "paper" in entry_type) and not ("book" in entry_type):
@@ -410,7 +407,7 @@ def get_enhanced_sppu_pdf_data(appraisal: Appraisal) -> Dict:
     hod_comments_table2 = hod_review.get("comments_table2", "") or ""
     hod_remarks = hod_review.get("remarks_suggestions", "") or ""
     justification = hod_review.get("justification", "") or ""
-    principal_remarks = appraisal.remarks or ""
+    principal_remarks = (base.get("remarks", {}) or {}).get("principal", "")
     
     return {
         **base,

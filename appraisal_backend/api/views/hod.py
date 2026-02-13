@@ -301,10 +301,7 @@ class HODAppraisalList(APIView):
 
     def get(self, request):
         department = _get_hod_department(request.user)
-        if department:
-            print(f"DEBUG: HOD {request.user.username} found for department {department.department_name}")
-        else:
-            print(f"DEBUG: HOD {request.user.username} NOT linked to any department")
+        if not department:
             return Response(
                 {"error": "HOD is not assigned to any department"},
                 status=400
@@ -327,8 +324,6 @@ class HODAppraisalList(APIView):
             ]
         ).order_by("-updated_at")
         
-        print(f"DEBUG: Found {appraisals.count()} faculty appraisals for department {department.department_name}")
-
         return Response([
             {
                 "appraisal_id": a.appraisal_id,          # ✅ REQUIRED
