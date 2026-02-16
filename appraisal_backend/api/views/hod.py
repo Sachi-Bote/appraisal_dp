@@ -13,8 +13,11 @@ from django.db import transaction
 from api.serializers import AppraisalSerializer
 from core.models import FacultyProfile, Appraisal, AppraisalScore, User, HODProfile
 from core.utils.audit import log_action
-
-ALLOWED_VERIFIED_GRADES = {"Good", "Satisfactory", "Not Satisfactory"}
+from core.services.sppu_verified import (
+    ALLOWED_VERIFIED_GRADES,
+    merge_verified_grading,
+    derive_overall_grade,
+)
 
 
 def _get_hod_department(user):
@@ -385,23 +388,24 @@ class HODApproveAppraisal(APIView):
                 status=400
             )
 
-        # Grade must be verified in review state before approval.
-        # Backward-compatible path: allow UI to send verified_grade in approve payload.
-        score = AppraisalScore.objects.filter(appraisal=appraisal).first()
-        if not score or not score.verified_grade:
-            verified_grade = request.data.get("verified_grade")
-            if verified_grade not in ALLOWED_VERIFIED_GRADES:
-                return Response(
-                    {"error": "Set verified grade first (after starting review) before approval"},
-                    status=400
-                )
-            AppraisalScore.objects.update_or_create(
-                appraisal=appraisal,
-                defaults={"verified_grade": verified_grade}
+        # Save HOD verified grading + comments in appraisal JSON for enhanced SPPU.
+        appraisal_data = appraisal.appraisal_data if isinstance(appraisal.appraisal_data, dict) else {}
+        appraisal_data, grading = merge_verified_grading(appraisal_data, False, request.data)
+
+        table1_teaching = grading.get("table1_verified_teaching", "")
+        table1_activities = grading.get("table1_verified_activities", "")
+        if not table1_teaching or not table1_activities:
+            return Response(
+                {"error": "Set Table 1 verified grading (Teaching and Activities) before approval"},
+                status=400
             )
 
-        # Save HOD review comments in appraisal JSON for enhanced SPPU Part B.
-        appraisal_data = appraisal.appraisal_data if isinstance(appraisal.appraisal_data, dict) else {}
+        overall_verified_grade = derive_overall_grade(table1_teaching, table1_activities)
+        AppraisalScore.objects.update_or_create(
+            appraisal=appraisal,
+            defaults={"verified_grade": overall_verified_grade}
+        )
+
         hod_review = appraisal_data.get("hod_review", {})
         if not isinstance(hod_review, dict):
             hod_review = {}
@@ -479,13 +483,31 @@ class HODVerifyGradeAPI(APIView):
                 status=400
             )
 
+        appraisal_data = appraisal.appraisal_data if isinstance(appraisal.appraisal_data, dict) else {}
+        appraisal_data, grading = merge_verified_grading(
+            appraisal_data,
+            False,
+            {"table1_verified_teaching": verified_grade, "table1_verified_activities": verified_grade}
+        )
+        appraisal.appraisal_data = appraisal_data
+        appraisal.save(update_fields=["appraisal_data"])
+
+        overall_verified_grade = derive_overall_grade(
+            grading.get("table1_verified_teaching"),
+            grading.get("table1_verified_activities"),
+        )
         AppraisalScore.objects.update_or_create(
-                appraisal=appraisal,
-                defaults={"verified_grade": verified_grade}
-            )
+            appraisal=appraisal,
+            defaults={"verified_grade": overall_verified_grade}
+        )
 
         return Response(
-            {"message": "Verified grade updated by HOD", "verified_grade": verified_grade},
+            {
+                "message": "Verified grade updated by HOD",
+                "verified_grade": overall_verified_grade,
+                "table1_verified_teaching": grading.get("table1_verified_teaching", ""),
+                "table1_verified_activities": grading.get("table1_verified_activities", ""),
+            },
             status=200
         )
 

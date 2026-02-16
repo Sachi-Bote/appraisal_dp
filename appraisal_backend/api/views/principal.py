@@ -15,8 +15,11 @@ from core.models import ApprovalHistory
 from core.services.pdf.save import save_pdf
 from core.utils.audit import log_action
 from django.db import transaction
-
-ALLOWED_VERIFIED_GRADES = {"Good", "Satisfactory", "Not Satisfactory"}
+from core.services.sppu_verified import (
+    ALLOWED_VERIFIED_GRADES,
+    merge_verified_grading,
+    derive_overall_grade,
+)
 
 
 class PrincipalApproveAPI(APIView):
@@ -39,20 +42,24 @@ class PrincipalApproveAPI(APIView):
                 status=400
             )
 
-        # Verified-grade enforcement is only for HOD appraisals.
+        appraisal_data = appraisal.appraisal_data if isinstance(appraisal.appraisal_data, dict) else {}
+
+        # Verified-grade enforcement is only for HOD submissions.
         if appraisal.is_hod_appraisal is True:
-            score = AppraisalScore.objects.filter(appraisal=appraisal).first()
-            if not score or not score.verified_grade:
-                verified_grade = request.data.get("verified_grade")
-                if verified_grade not in ALLOWED_VERIFIED_GRADES:
-                    return Response(
-                        {"error": "Set verified grade first (after starting review) before approval"},
-                        status=400
-                    )
-                AppraisalScore.objects.update_or_create(
-                    appraisal=appraisal,
-                    defaults={"verified_grade": verified_grade}
+            appraisal_data, grading = merge_verified_grading(appraisal_data, True, request.data)
+            table1_teaching = grading.get("table1_verified_teaching", "")
+            table1_activities = grading.get("table1_verified_activities", "")
+            if not table1_teaching or not table1_activities:
+                return Response(
+                    {"error": "Set Table 1 verified grading (Teaching and Activities) before approval"},
+                    status=400
                 )
+
+            overall_verified_grade = derive_overall_grade(table1_teaching, table1_activities)
+            AppraisalScore.objects.update_or_create(
+                appraisal=appraisal,
+                defaults={"verified_grade": overall_verified_grade}
+            )
 
         new_state = perform_action(
             current_state=appraisal.status,
@@ -61,10 +68,10 @@ class PrincipalApproveAPI(APIView):
 
         appraisal.status = new_state
         appraisal.principal = request.user
+        appraisal.appraisal_data = appraisal_data
         if principal_remarks is not None:
             appraisal.remarks = principal_remarks
 
-            appraisal_data = appraisal.appraisal_data or {}
             principal_review = appraisal_data.get("principal_review", {})
             if not isinstance(principal_review, dict):
                 principal_review = {}
@@ -120,13 +127,31 @@ class PrincipalVerifyGradeAPI(APIView):
                 status=400
             )
 
+        appraisal_data = appraisal.appraisal_data if isinstance(appraisal.appraisal_data, dict) else {}
+        appraisal_data, grading = merge_verified_grading(
+            appraisal_data,
+            True,
+            {"table1_verified_teaching": verified_grade, "table1_verified_activities": verified_grade}
+        )
+        appraisal.appraisal_data = appraisal_data
+        appraisal.save(update_fields=["appraisal_data"])
+
+        overall_verified_grade = derive_overall_grade(
+            grading.get("table1_verified_teaching"),
+            grading.get("table1_verified_activities"),
+        )
         AppraisalScore.objects.update_or_create(
             appraisal=appraisal,
-            defaults={"verified_grade": verified_grade}
+            defaults={"verified_grade": overall_verified_grade}
         )
 
         return Response(
-            {"message": "Verified grade updated by Principal", "verified_grade": verified_grade},
+            {
+                "message": "Verified grade updated by Principal",
+                "verified_grade": overall_verified_grade,
+                "table1_verified_teaching": grading.get("table1_verified_teaching", ""),
+                "table1_verified_activities": grading.get("table1_verified_activities", ""),
+            },
             status=200
         )
 

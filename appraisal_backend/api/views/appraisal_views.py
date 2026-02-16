@@ -8,6 +8,8 @@ from workflow.states import States
 from django.http import FileResponse
 from core.models import GeneratedPDF
 import os
+from core.services.sppu_verified import extract_verified_grading, TABLE2_VERIFIED_KEYS
+from core.services.pdf.enhanced_sppu_mapper import get_enhanced_sppu_pdf_data
 
 
 class CurrentFacultyAppraisalAPIView(APIView):
@@ -177,6 +179,21 @@ class AppraisalDetailAPI(APIView):
         verified_grade = None
         if hasattr(appraisal, 'appraisalscore'):
             verified_grade = appraisal.appraisalscore.verified_grade
+        verified_grading = extract_verified_grading(
+            appraisal.appraisal_data,
+            appraisal.is_hod_appraisal is True,
+        )
+        sppu_review_data = None
+        try:
+            sppu_data = get_enhanced_sppu_pdf_data(appraisal)
+            sppu_review_data = {
+                "table1_teaching": sppu_data.get("table1_teaching", {}),
+                "table1_activities": sppu_data.get("table1_activities", {}),
+                "table2_research": sppu_data.get("table2_research", {}),
+                "table2_total_score": sppu_data.get("table2_total_score", 0),
+            }
+        except Exception:
+            sppu_review_data = None
 
         can_verify_grade = False
         verifier_role = None
@@ -195,9 +212,12 @@ class AppraisalDetailAPI(APIView):
             "appraisal_data": appraisal.appraisal_data,
             "remarks": appraisal.remarks,
             "verified_grade": verified_grade,
+            "verified_grading": verified_grading,
+            "sppu_review_data": sppu_review_data,
             "can_verify_grade": can_verify_grade,
             "verifier_role": verifier_role,
             "verified_grade_options": ["Good", "Satisfactory", "Not Satisfactory"],
+            "table2_verified_keys": TABLE2_VERIFIED_KEYS,
             "faculty": {
                 "name": appraisal.faculty.full_name,
                 "department": appraisal.faculty.department.department_name,

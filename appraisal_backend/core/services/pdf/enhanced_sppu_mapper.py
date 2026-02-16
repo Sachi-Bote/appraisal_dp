@@ -3,6 +3,11 @@ from core.models import Appraisal
 from .data_mapper import get_common_pdf_data
 from scoring.engine import calculate_full_score
 from decimal import Decimal
+from core.services.sppu_verified import (
+    derive_overall_grade,
+    extract_verified_grading,
+    TABLE2_VERIFIED_KEYS,
+)
 
 
 def _to_bool(value) -> bool:
@@ -381,24 +386,35 @@ def get_enhanced_sppu_pdf_data(appraisal: Appraisal) -> Dict:
     table2_total_score = sum(cat["total_score"] for cat in table2_categories.values())
     
     # ========== OVERALL / VERIFIED GRADING ==========
-    if teaching_grade == "Good" and activities_grade in ["Good", "Satisfactory"]:
-        overall_grade = "Good"
-    elif teaching_grade == "Satisfactory" and activities_grade in ["Good", "Satisfactory"]:
-        overall_grade = "Satisfactory"
-    else:
-        overall_grade = "Not Satisfactory"
-
-    verified_grade = ""
-    if hasattr(appraisal, "appraisalscore"):
-        verified_grade = appraisal.appraisalscore.verified_grade or ""
+    overall_grade = derive_overall_grade(teaching_grade, activities_grade)
 
     show_verified_grade = appraisal.status in {
+        "REVIEWED_BY_HOD",
         "HOD_APPROVED",
         "REVIEWED_BY_PRINCIPAL",
         "PRINCIPAL_APPROVED",
         "FINALIZED",
     }
-    display_verified_grade = verified_grade if show_verified_grade else ""
+
+    verified_grading = extract_verified_grading(raw, appraisal.is_hod_appraisal is True)
+    table1_verified_teaching = verified_grading.get("table1_verified_teaching", "")
+    table1_verified_activities = verified_grading.get("table1_verified_activities", "")
+    table2_verified_scores = verified_grading.get("table2_verified_scores", {})
+
+    if not table1_verified_teaching and hasattr(appraisal, "appraisalscore"):
+        table1_verified_teaching = appraisal.appraisalscore.verified_grade or ""
+    if not table1_verified_activities and hasattr(appraisal, "appraisalscore"):
+        table1_verified_activities = appraisal.appraisalscore.verified_grade or ""
+
+    if not show_verified_grade:
+        table1_verified_teaching = ""
+        table1_verified_activities = ""
+        table2_verified_scores = {key: "" for key in TABLE2_VERIFIED_KEYS}
+
+    verified_overall_grade = derive_overall_grade(
+        table1_verified_teaching or teaching_grade,
+        table1_verified_activities or activities_grade,
+    )
 
     hod_review = raw.get("hod_review", {})
     if not isinstance(hod_review, dict):
@@ -419,7 +435,7 @@ def get_enhanced_sppu_pdf_data(appraisal: Appraisal) -> Dict:
             "total_taught": total_held,
             "percentage": f"{attendance_percentage:.2f}",
             "self_grade": teaching_grade,
-            "verified_grade": display_verified_grade,
+            "verified_grade": table1_verified_teaching,
         },
         
         # TABLE 1 - Activities
@@ -427,17 +443,18 @@ def get_enhanced_sppu_pdf_data(appraisal: Appraisal) -> Dict:
             "checkboxes": activities_checkboxes,
             "count": activity_count,
             "self_grade": activities_grade,
-            "verified_grade": display_verified_grade,
+            "verified_grade": table1_verified_activities,
         },
-        
+
         # TABLE 2 - Research Scoring
         "table2_research": table2_categories,
+        "table2_verified": table2_verified_scores,
         "table2_total_score": table2_total_score,
         
         # PART B - Assessment
         "part_b": {
-            "overall_grade": display_verified_grade or overall_grade,
-            "verified_grade": display_verified_grade,
+            "overall_grade": overall_grade,
+            "verified_grade": verified_overall_grade if show_verified_grade else "",
             "hod_assessment": "",
             "justification": justification,
             "hod_comments_table1": hod_comments_table1,
