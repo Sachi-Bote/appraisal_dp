@@ -59,10 +59,14 @@ class HODSubmitAPI(APIView):
         if not payload:
             return Response({"error": "appraisal_data is required"}, status=400)
 
-        # ✅ USE CENTRAL VALIDATOR
-        ok, err = validate_full_form(payload, meta)
-        if not ok:
-            return Response({"error": err}, status=400)
+        submit_action = payload.get("submit_action", "submit").lower()
+
+        # Full validation is required only for final submit.
+        # Draft saves should allow partially filled forms.
+        if submit_action == "submit":
+            ok, err = validate_full_form(payload, meta)
+            if not ok:
+                return Response({"error": err}, status=400)
 
         # 3️⃣ DUPLICATE CHECK / DRAFT UPDATE
         existing_appraisal = Appraisal.objects.filter(
@@ -95,8 +99,6 @@ class HODSubmitAPI(APIView):
                 is_hod_appraisal=True,
                 principal=User.objects.filter(role="PRINCIPAL").first()
             )
-
-        submit_action = payload.get("submit_action", "submit").lower()
 
         if submit_action == "submit":
             old_state = {"status": appraisal.status}

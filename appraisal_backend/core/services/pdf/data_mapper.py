@@ -58,6 +58,11 @@ def get_common_pdf_data(appraisal: Appraisal) -> Dict:
     appraisal_data = appraisal.appraisal_data or {}
     hod_comments = _get_hod_comments(appraisal)
     principal_remarks = _get_principal_remarks(appraisal)
+    payload_justification = (
+        appraisal_data.get("justification")
+        or (appraisal_data.get("pbas", {}) or {}).get("justification")
+        or ""
+    )
 
     return {
         "faculty": {
@@ -74,7 +79,7 @@ def get_common_pdf_data(appraisal: Appraisal) -> Dict:
         "period": appraisal.academic_year,
 
         "remarks": {
-            "justification": appraisal.remarks or "",
+            "justification": payload_justification or appraisal.remarks or "",
             "hod_comments": hod_comments,
             "principal": principal_remarks,
         },

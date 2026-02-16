@@ -422,7 +422,12 @@ def get_enhanced_sppu_pdf_data(appraisal: Appraisal) -> Dict:
     hod_comments_table1 = hod_review.get("comments_table1", "") or ""
     hod_comments_table2 = hod_review.get("comments_table2", "") or ""
     hod_remarks = hod_review.get("remarks_suggestions", "") or ""
-    justification = hod_review.get("justification", "") or ""
+    justification = (
+        hod_review.get("justification", "")
+        or raw.get("justification", "")
+        or (raw.get("pbas", {}) or {}).get("justification", "")
+        or ""
+    )
     principal_remarks = (base.get("remarks", {}) or {}).get("principal", "")
     
     return {
@@ -464,7 +469,7 @@ def get_enhanced_sppu_pdf_data(appraisal: Appraisal) -> Dict:
         },
         
         # Metadata
-        "academic_year": raw.get("academic_year", ""),
-        "semester": raw.get("semester", ""),
+        "academic_year": raw.get("academic_year") or appraisal.academic_year or base.get("period", ""),
+        "semester": raw.get("semester") or appraisal.semester or "",
         "form_type": "SPPU",
     }

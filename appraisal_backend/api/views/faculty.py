@@ -53,10 +53,14 @@ class FacultySubmitAPI(APIView):
         
         # checking if the appraisal is already finalized
 
-        # 2️⃣ VALIDATION
-        ok, err = validate_full_form(payload, meta)
-        if not ok:
-            return Response({"error": err}, status=400)
+        submit_action = payload.get("submit_action", "submit").lower()
+
+        # Full validation is required only for final submit.
+        # Draft saves should allow partially filled forms.
+        if submit_action == "submit":
+            ok, err = validate_full_form(payload, meta)
+            if not ok:
+                return Response({"error": err}, status=400)
 
 
         # 3️⃣ DUPLICATE CHECK / DRAFT UPDATE
@@ -88,8 +92,6 @@ class FacultySubmitAPI(APIView):
                 status=States.DRAFT,
                 is_hod_appraisal=False
             )
-
-        submit_action = payload.get("submit_action", "submit").lower()
 
         if submit_action == "submit":
             # 4️⃣ SCORING (Only for submission)
