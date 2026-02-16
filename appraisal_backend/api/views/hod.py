@@ -401,9 +401,29 @@ class HODApproveAppraisal(APIView):
             )
 
         overall_verified_grade = derive_overall_grade(table1_teaching, table1_activities)
+
+        # Recalculate scores so verified score persists with HOD approval as well.
+        try:
+            score_result = calculate_full_score(appraisal.appraisal_data)
+        except Exception:
+            score_result = None
+
         AppraisalScore.objects.update_or_create(
             appraisal=appraisal,
-            defaults={"verified_grade": overall_verified_grade}
+            defaults={
+                "verified_grade": overall_verified_grade,
+                **(
+                    {
+                        "teaching_score": score_result["teaching"]["score"],
+                        "research_score": score_result["research"]["total"],
+                        "activity_score": score_result["activities"]["score"],
+                        "feedback_score": score_result["pbas"]["total"],
+                        "total_score": score_result["total_score"],
+                        "acr_score": score_result["acr"]["credit_point"],
+                    }
+                    if score_result else {}
+                ),
+            }
         )
 
         hod_review = appraisal_data.get("hod_review", {})
@@ -438,7 +458,8 @@ class HODApproveAppraisal(APIView):
 
         return Response({
             "message": "Approved by HOD",
-            "new_state": new_state
+            "new_state": new_state,
+            "total_score": score_result.get("total_score") if score_result else None
         })
 
 
@@ -496,9 +517,31 @@ class HODVerifyGradeAPI(APIView):
             grading.get("table1_verified_teaching"),
             grading.get("table1_verified_activities"),
         )
+
+        # Recalculate scores so the frontend "verified score" field can be auto-filled while HOD is reviewing.
+        # This keeps the persisted AppraisalScore in sync with the latest verified grades.
+        try:
+            score_result = calculate_full_score(appraisal.appraisal_data)
+        except Exception:
+            score_result = None
+
         AppraisalScore.objects.update_or_create(
             appraisal=appraisal,
-            defaults={"verified_grade": overall_verified_grade}
+            defaults={
+                "verified_grade": overall_verified_grade,
+                # Persist calculated scores so they reflect on the verify screen without manual entry
+                **(
+                    {
+                        "teaching_score": score_result["teaching"]["score"],
+                        "research_score": score_result["research"]["total"],
+                        "activity_score": score_result["activities"]["score"],
+                        "feedback_score": score_result["pbas"]["total"],
+                        "total_score": score_result["total_score"],
+                        "acr_score": score_result["acr"]["credit_point"],
+                    }
+                    if score_result else {}
+                ),
+            }
         )
 
         return Response(
@@ -507,6 +550,7 @@ class HODVerifyGradeAPI(APIView):
                 "verified_grade": overall_verified_grade,
                 "table1_verified_teaching": grading.get("table1_verified_teaching", ""),
                 "table1_verified_activities": grading.get("table1_verified_activities", ""),
+                "total_score": score_result.get("total_score") if score_result else None,
             },
             status=200
         )
