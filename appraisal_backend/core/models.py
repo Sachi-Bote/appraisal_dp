@@ -117,6 +117,7 @@ class FacultyProfile(models.Model):
     date_of_joining = models.DateField(null=True, blank=True)
     email = models.EmailField(max_length=100, null=True, blank=True)
     mobile = models.CharField(max_length=15, null=True, blank=True)
+    profile_image = models.ImageField(upload_to="profile_images/", null=True, blank=True)
 
     class Meta:
         db_table = 'faculty_profiles'
@@ -145,6 +146,7 @@ class HODProfile(models.Model):
     full_name = models.CharField(max_length=100)
     email = models.EmailField(max_length=100, null=True, blank=True)
     mobile = models.CharField(max_length=15, null=True, blank=True)
+    profile_image = models.ImageField(upload_to="profile_images/", null=True, blank=True)
 
     class Meta:
         db_table = 'hod_profiles'

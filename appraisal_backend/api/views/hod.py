@@ -434,6 +434,7 @@ class HODApproveAppraisal(APIView):
         hod_review["comments_table1"] = request.data.get("hod_comments_table1", "") or ""
         hod_review["comments_table2"] = request.data.get("hod_comments_table2", "") or ""
         hod_review["remarks_suggestions"] = request.data.get("hod_remarks", "") or ""
+        hod_review["justification"] = request.data.get("hod_justification_not_satisfactory", "") or ""
         appraisal_data["hod_review"] = hod_review
         appraisal.appraisal_data = appraisal_data
 
