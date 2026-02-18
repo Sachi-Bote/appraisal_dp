@@ -204,6 +204,9 @@ class HODResubmitAPI(APIView):
         # Calculation for Score (if submitting)
         score_result = None
         if submit_action == "submit":
+            ok, err = validate_full_form(data, request.data)
+            if not ok:
+                return Response({"error": err}, status=400)
             score_result = calculate_full_score(data)
 
         # workflow

@@ -5,7 +5,6 @@
 # -------------------------------------------------------------------
 
 POINTS = {
-
     # 1. Research Papers
     "journal_papers": 8,  # per paper (UGC / Peer-reviewed)
 
@@ -22,20 +21,15 @@ POINTS = {
     "translation_book": 8,
 
     # 3. ICT / Pedagogy / MOOCs / E-Content
-    # (a) Innovative pedagogy
     "innovative_pedagogy": 5,
+    "new_curriculum": 2,
+    "new_course": 2,
 
-    # (b) New curricula / courses
-    "new_curriculum": 2,        # per curriculum/course
-    "new_course": 2,            # per course
-
-    # MOOCs
     "mooc_complete_4_quadrant": 20,
-    "mooc_module": 5,           # per module/lecture
-    "mooc_content_writer": 2,   # per module (min one quadrant)
+    "mooc_module": 5,
+    "mooc_content_writer": 2,
     "mooc_course_coordinator": 8,
 
-    # (d) E-Content
     "econtent_complete_course": 12,
     "econtent_module": 5,
     "econtent_contribution": 2,
@@ -77,20 +71,15 @@ POINTS = {
     "invited_lecture_state_university": 2,
 }
 
-# CALCULATION LOGIC
-
-
-# scoring/research.py
 
 def calculate_research_score(payload: dict) -> dict:
     """
     Expected input:
     {
         "entries": [
-            {"type": "journal_papers"},
-            {"type": "journal_papers"},
-            {"type": "book_international"},
-            {"type": "invited_lecture_national"}
+            {"type": "journal_papers", "count": 2},
+            {"type": "book_international", "count": 1},
+            {"type": "invited_lecture_national", "count": 1}
         ]
     }
     """
@@ -100,28 +89,34 @@ def calculate_research_score(payload: dict) -> dict:
     breakdown = {}
     total = 0
 
-    # 1️⃣ COUNT how many times each research type appears
     for entry in entries:
         activity_type = entry.get("type")
 
         if activity_type not in POINTS:
-            continue  # ignore unsupported entries safely
+            continue
+
+        try:
+            unit_count = int(float(entry.get("count", 1)))
+        except (TypeError, ValueError):
+            unit_count = 0
+
+        if unit_count <= 0:
+            continue
 
         if activity_type not in breakdown:
             breakdown[activity_type] = {
                 "count": 0,
                 "points_per_unit": POINTS[activity_type],
-                "score": 0
+                "score": 0,
             }
 
-        breakdown[activity_type]["count"] += 1
+        breakdown[activity_type]["count"] += unit_count
 
-    # 2️⃣ MULTIPLY count × points (THIS is your exact rule)
-    for activity_type, data in breakdown.items():
+    for _, data in breakdown.items():
         data["score"] = data["count"] * data["points_per_unit"]
         total += data["score"]
 
     return {
         "breakdown": breakdown,
-        "total": total
+        "total": total,
     }

@@ -11,6 +11,11 @@ from .teaching_rules import validate_teaching_input
 from .activity_rules import validate_activities
 from .research_rules import validate_research_payload
 from .pbas_rules import validate_pbas_scores
+from scoring.activities import (
+    calculate_departmental_activity_score,
+    calculate_institute_activity_score,
+    calculate_society_activity_score,
+)
 
 # Top-level required keys for a single appraisal submission payload
 TOP_LEVEL_REQUIRED = {
@@ -72,6 +77,10 @@ def validate_full_form(payload: Dict, meta: Dict) -> Tuple[bool, str]:
         for idx, act in enumerate(dept_acts, start=1):
             if "credits_claimed" not in act:
                 return False, f"Missing credits_claimed in departmental activity #{idx}"
+        try:
+            calculate_departmental_activity_score(dept_acts)
+        except ValueError as exc:
+            return False, str(exc)
             
     # ✅ ADD: PBAS Institute Activities validation
     if meta.get("form_type") == "PBAS":
@@ -83,6 +92,10 @@ def validate_full_form(payload: Dict, meta: Dict) -> Tuple[bool, str]:
         for idx, act in enumerate(inst_acts, start=1):
             if "credits_claimed" not in act:
                 return False, f"Missing credits_claimed in institute activity #{idx}"
+        try:
+            calculate_institute_activity_score(inst_acts)
+        except ValueError as exc:
+            return False, str(exc)
             
     # ✅ ADD: PBAS Society Activities validation
     if meta.get("form_type") == "PBAS":
@@ -94,6 +107,10 @@ def validate_full_form(payload: Dict, meta: Dict) -> Tuple[bool, str]:
         for idx, act in enumerate(society_acts, start=1):
             if "credits_claimed" not in act:
                 return False, f"Missing credits_claimed in society activity #{idx}"
+        try:
+            calculate_society_activity_score(society_acts)
+        except ValueError as exc:
+            return False, str(exc)
 
 
         # ✅ ADD: PBAS Student Feedback validation

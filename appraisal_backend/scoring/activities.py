@@ -1,4 +1,5 @@
-# scoring/activities.py
+from decimal import Decimal, InvalidOperation
+
 
 def calculate_sppu_activity_score(payload: dict) -> dict:
     """
@@ -27,7 +28,7 @@ def calculate_sppu_activity_score(payload: dict) -> dict:
     return {
         "yes_count": yes_count,
         "grade": grade,
-        "score": score
+        "score": score,
     }
 
 
@@ -44,7 +45,7 @@ def calculate_student_feedback_score(feedback_entries: list) -> dict:
         return {
             "total": 0,
             "average": 0,
-            "count": 0
+            "count": 0,
         }
 
     total = sum(float(e["feedback_score"]) for e in feedback_entries)
@@ -58,162 +59,168 @@ def calculate_student_feedback_score(feedback_entries: list) -> dict:
         "count": count,
         "total": round(total, 2),
         "average": average,
-        "score": final_score
+        "score": final_score,
     }
+
+
+def _to_decimal_or_invalid(value) -> Decimal:
+    try:
+        return Decimal(str(value))
+    except (InvalidOperation, TypeError, ValueError):
+        return Decimal("-1")
 
 
 def calculate_departmental_activity_score(payload: list) -> dict:
     """
-    Input:
-    [
-      {
-        "activity_code": "LAB_IN_CHARGE",
-        "activity_name": "Lab In charge",
-        "semester": "1/2024-25",
-        "credits_claimed": 3
-      },
-      ...
-    ]
+    Section C: Departmental Activities (Max credit 20)
+    Criteria in provided table: 3 points per activity/semester/event.
     """
 
-    MAX_CREDIT = 20
-    PER_ACTIVITY_MAX = 3
+    max_credit = Decimal("20")
+    per_activity_max = Decimal("3")
 
-    total_claimed = 0
+    total_claimed = Decimal("0")
     validated_activities = []
 
     for idx, activity in enumerate(payload, start=1):
-        credits = activity.get("credits_claimed", 0)
+        credits = _to_decimal_or_invalid(activity.get("credits_claimed", 0))
 
-        # 🔒 Validation
-        if not isinstance(credits, int) or credits < 0 or credits > PER_ACTIVITY_MAX:
+        if credits < 0 or credits > per_activity_max:
             raise ValueError(
                 f"Invalid credits for departmental activity #{idx} "
                 f"(must be between 0 and 3)"
             )
 
         total_claimed += credits
+        validated_activities.append(
+            {
+                "activity_code": activity.get("activity_code"),
+                "activity_name": activity.get("activity_name") or activity.get("activity"),
+                "semester": activity.get("semester"),
+                "credits_claimed": float(credits),
+            }
+        )
 
-        validated_activities.append({
-            "activity_code": activity.get("activity_code"),
-            "activity_name": activity.get("activity_name"),
-            "semester": activity.get("semester"),
-            "credits_claimed": credits
-        })
-
-    total_awarded = min(total_claimed, MAX_CREDIT)
+    total_awarded = min(total_claimed, max_credit)
 
     return {
         "activities": validated_activities,
-        "total_claimed": total_claimed,
-        "total_awarded": total_awarded,
-        "max_credit": MAX_CREDIT
+        "total_claimed": float(total_claimed),
+        "total_awarded": float(total_awarded),
+        "max_credit": float(max_credit),
     }
 
 
-# scoring/activities.py
+def _normalize_institute_activity_key(activity: dict) -> str:
+    code = str(activity.get("activity_code", "") or "").strip().upper()
+    name = str(activity.get("activity_name", "") or activity.get("activity", "") or "").strip().upper()
+    text = f"{code} {name}"
+
+    if "HOD" in text or "DEAN" in text:
+        return "HOD_DEAN"
+    if "COORDINATOR" in text and any(k in text for k in ("APPOINTED", "HEAD OF INSTITUTE", "HOI")):
+        return "COORDINATOR_APPOINTED_BY_HOI"
+    if "ORGANIZED" in text and "CONFERENCE" in text:
+        return "ORGANIZED_CONFERENCE"
+    if any(k in text for k in ("FDP", "CO-COORDINATOR", "COORDINATOR")) and "CONFERENCE" in text:
+        return "FDP_CONFERENCE_COORDINATOR"
+
+    return code
+
 
 def calculate_institute_activity_score(payload: list) -> dict:
     """
-    Input:
-    [
-      {
-        "activity_code": "HOD_DEAN",
-        "activity_name": "HoD / Dean",
-        "semester": "1/2024-25",
-        "credits_claimed": 4
-      },
-      ...
-    ]
+    Section D: Institute Activities (Max credit 10)
+    Criteria caps from provided table:
+    - HoD / Dean: 4
+    - Coordinator appointed by Head of Institute: 2
+    - Organized Conference: 2
+    - FDP/Conference coordination: 1 (can be fractional split)
     """
 
-    MAX_CREDIT = 10
-    PER_ACTIVITY_MAX = 4
+    max_credit = Decimal("10")
+    default_per_activity_max = Decimal("4")
+    institute_activity_caps = {
+        "HOD_DEAN": Decimal("4"),
+        "COORDINATOR_APPOINTED_BY_HOI": Decimal("2"),
+        "ORGANIZED_CONFERENCE": Decimal("2"),
+        "FDP_CONFERENCE_COORDINATOR": Decimal("1"),
+    }
 
-    total_claimed = 0
+    total_claimed = Decimal("0")
     validated_activities = []
 
     for idx, activity in enumerate(payload, start=1):
-        credits = activity.get("credits_claimed", 0)
+        credits = _to_decimal_or_invalid(activity.get("credits_claimed", 0))
+        activity_key = _normalize_institute_activity_key(activity)
+        per_activity_max = institute_activity_caps.get(activity_key, default_per_activity_max)
 
-        # 🔒 Validation
-        if not isinstance(credits, int) or credits < 0 or credits > PER_ACTIVITY_MAX:
+        if credits < 0 or credits > per_activity_max:
             raise ValueError(
                 f"Invalid credits for institute activity #{idx} "
-                f"(must be between 0 and 4)"
+                f"(must be between 0 and {per_activity_max})"
             )
 
         total_claimed += credits
+        validated_activities.append(
+            {
+                "activity_code": activity.get("activity_code"),
+                "activity_name": activity.get("activity_name") or activity.get("activity"),
+                "semester": activity.get("semester"),
+                "credits_claimed": float(credits),
+            }
+        )
 
-        validated_activities.append({
-            "activity_code": activity.get("activity_code"),
-            "activity_name": activity.get("activity_name"),
-            "semester": activity.get("semester"),
-            "credits_claimed": credits
-        })
-
-    total_awarded = min(total_claimed, MAX_CREDIT)
+    total_awarded = min(total_claimed, max_credit)
 
     return {
         "activities": validated_activities,
-        "total_claimed": total_claimed,
-        "total_awarded": total_awarded,
-        "max_credit": MAX_CREDIT
+        "total_claimed": float(total_claimed),
+        "total_awarded": float(total_awarded),
+        "max_credit": float(max_credit),
     }
 
 
-# scoring/activities.py
-
 def calculate_society_activity_score(payload: list) -> dict:
     """
-    Input:
-    [
-      {
-        "activity_code": "BLOOD_DONATION",
-        "activity_name": "Blood Donation Activity organization",
-        "semester": "2024-25",
-        "credits_claimed": 5
-      },
-      ...
-    ]
+    Section F: Contribution to Society (Max credit 10)
+    Criteria in provided table: 5 points per activity.
     """
 
-    MAX_CREDIT = 10
-    PER_ACTIVITY_MAX = 5
+    max_credit = Decimal("10")
+    per_activity_max = Decimal("5")
 
-    total_claimed = 0
+    total_claimed = Decimal("0")
     validated_activities = []
 
     for idx, activity in enumerate(payload, start=1):
-        credits = activity.get("credits_claimed", 0)
+        credits = _to_decimal_or_invalid(activity.get("credits_claimed", 0))
 
-        # 🔒 Validation
-        if not isinstance(credits, int) or credits < 0 or credits > PER_ACTIVITY_MAX:
+        if credits < 0 or credits > per_activity_max:
             raise ValueError(
                 f"Invalid credits for society activity #{idx} "
                 f"(must be between 0 and 5)"
             )
 
         total_claimed += credits
+        validated_activities.append(
+            {
+                "activity_code": activity.get("activity_code"),
+                "activity_name": activity.get("activity_name") or activity.get("activity"),
+                "semester": activity.get("semester"),
+                "credits_claimed": float(credits),
+            }
+        )
 
-        validated_activities.append({
-            "activity_code": activity.get("activity_code"),
-            "activity_name": activity.get("activity_name"),
-            "semester": activity.get("semester"),
-            "credits_claimed": credits
-        })
-
-    total_awarded = min(total_claimed, MAX_CREDIT)
+    total_awarded = min(total_claimed, max_credit)
 
     return {
         "activities": validated_activities,
-        "total_claimed": total_claimed,
-        "total_awarded": total_awarded,
-        "max_credit": MAX_CREDIT
+        "total_claimed": float(total_claimed),
+        "total_awarded": float(total_awarded),
+        "max_credit": float(max_credit),
     }
 
-
-from decimal import Decimal
 
 ACR_GRADE_SCORE_MAP = {
     "A+": Decimal("10"),
@@ -223,12 +230,9 @@ ACR_GRADE_SCORE_MAP = {
 }
 
 
-
 def calculate_institute_acr_score(grade) -> dict:
-    # Convert to string to handle both numbers and strings uniformly
     grade_str = str(grade).strip().upper()
 
-    # Try mapping first
     if grade_str in ACR_GRADE_SCORE_MAP:
         return {
             "activity": "ACR",
@@ -236,35 +240,16 @@ def calculate_institute_acr_score(grade) -> dict:
             "credit_point": ACR_GRADE_SCORE_MAP[grade_str],
         }
 
-    # Fallback: try parsing as number
     try:
         val = float(grade_str)
-        # Apply the requested naming scheme logic
         if 8 <= val <= 10:
-            return {
-                "activity": "ACR",
-                "grade": "A+",
-                "credit_point": Decimal("10"),
-            }
-        elif 6 <= val < 8:
-            return {
-                "activity": "ACR",
-                "grade": "A",
-                "credit_point": Decimal("8"),
-            }
-        elif 4 <= val < 6:
-            return {
-                "activity": "ACR",
-                "grade": "B",
-                "credit_point": Decimal("6"),
-            }
-        else: # val < 4
-            return {
-                "activity": "ACR",
-                "grade": "C",
-                "credit_point": Decimal("4"),
-            }
-    except:
+            return {"activity": "ACR", "grade": "A+", "credit_point": Decimal("10")}
+        if 6 <= val < 8:
+            return {"activity": "ACR", "grade": "A", "credit_point": Decimal("8")}
+        if 4 <= val < 6:
+            return {"activity": "ACR", "grade": "B", "credit_point": Decimal("6")}
+        return {"activity": "ACR", "grade": "C", "credit_point": Decimal("4")}
+    except Exception:
         return {
             "activity": "ACR",
             "grade": grade_str,
