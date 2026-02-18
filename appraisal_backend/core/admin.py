@@ -42,7 +42,10 @@ class UserAdmin(admin.ModelAdmin):
             obj.department = department.department_name
 
             if obj.role == "HOD":
-                existing_hod = HODProfile.objects.filter(department=department).exclude(user=obj).first()
+                existing_hod_qs = HODProfile.objects.filter(department=department)
+                if obj.pk:
+                    existing_hod_qs = existing_hod_qs.exclude(user_id=obj.pk)
+                existing_hod = existing_hod_qs.first()
                 if existing_hod:
                     raise ValidationError(
                         f"Department '{department.department_name}' already has an HOD."
