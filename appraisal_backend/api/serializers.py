@@ -1,80 +1,67 @@
-from rest_framework import serializers
-from django.contrib.auth import authenticate
-from core.models import Appraisal
 from django.db import transaction
-from core.models import(
+from rest_framework import serializers
+
+from core.models import (
+    Appraisal,
     Department,
-    HODProfile, 
-    PrincipalProfile, 
-    User, 
-    FacultyProfile
+    FacultyProfile,
+    HODProfile,
+    PrincipalProfile,
+    User,
 )
 
 
 class RegisterSerializer(serializers.Serializer):
-    # 🔐 Auth fields
     email = serializers.EmailField(required=True)
     password = serializers.CharField(write_only=True)
 
-    # 🔑 Role & scope
     role = serializers.ChoiceField(choices=["FACULTY", "HOD", "PRINCIPAL", "ADMIN"])
     department = serializers.CharField(required=False, allow_blank=True)
 
-    # 👤 Profile fields
     full_name = serializers.CharField(required=True)
     designation = serializers.CharField(required=True)
-    mobile = serializers.CharField(required=True)
-    date_of_joining = serializers.DateField(required=True)
-    address = serializers.CharField(required=True)
-    gradePay = serializers.CharField(required=False, allow_blank = True)
-    promotion_designation = serializers.CharField(required=False, allow_blank = True)
-    eligibility_date = serializers.DateField(required=False, allow_null = True)
-    assessment_period = serializers.DateField(required=False,allow_null = True)
-
-
+    mobile = serializers.CharField(required=False, allow_blank=True)
+    date_of_joining = serializers.DateField(required=False, allow_null=True)
+    address = serializers.CharField(required=False, allow_blank=True)
+    gradePay = serializers.CharField(required=False, allow_blank=True)
+    promotion_designation = serializers.CharField(required=False, allow_blank=True)
+    eligibility_date = serializers.DateField(required=False, allow_null=True)
+    assessment_period = serializers.DateField(required=False, allow_null=True)
 
     @transaction.atomic
     def create(self, validated_data):
         role = validated_data["role"]
-        department_name = validated_data.get("department")
+        department_name = (validated_data.get("department") or "").strip()
 
-        # 🔒 Role–department rules
         if role in ["FACULTY", "HOD"] and not department_name:
-            raise serializers.ValidationError({
-                "department": "Department is required for this role"
-            })
-
-        if role in ["PRINCIPAL", "ADMIN"] and department_name:
-             # Just ignore it for Principal/Admin instead of erroring out to be safe
-             pass
-
-        # 🔎 Resolve department (auto-create if missing)
-        department = None
-        if department_name and role != "PRINCIPAL" and role != "ADMIN":
-            department, _ = Department.objects.get_or_create(
-                department_name__iexact=department_name.strip(),
-                defaults={'department_name': department_name.strip()}
+            raise serializers.ValidationError(
+                {"department": "Department is required for this role"}
             )
 
-        # 🚫 Prevent multiple HODs per department
+        department = None
+        if department_name and role not in ["PRINCIPAL", "ADMIN"]:
+            department = Department.objects.filter(
+                department_name__iexact=department_name
+            ).first()
+            if not department:
+                department = Department.objects.create(department_name=department_name)
 
         if role == "HOD" and HODProfile.objects.filter(department=department).exists():
-            raise serializers.ValidationError({
-                "department": "This department already has an HOD"
-            })
+            raise serializers.ValidationError(
+                {"department": "This department already has an HOD"}
+            )
 
-        # 👤 Create User (EMAIL IS IDENTITY)
-        # 1️⃣ CREATE USER
         user = User.objects.create_user(
             username=validated_data["email"],
             password=validated_data["password"],
             role=role,
             department=department,
-            full_name = validated_data["full_name"],
+            full_name=validated_data["full_name"],
             designation=validated_data.get("designation"),
             date_of_joining=validated_data.get("date_of_joining"),
             email=validated_data["email"],
-            mobile = validated_data["mobile"]
+            mobile=validated_data.get("mobile"),
+            must_change_password=True,
         )
 
         if role == "FACULTY":
@@ -84,10 +71,9 @@ class RegisterSerializer(serializers.Serializer):
                 designation=validated_data.get("designation"),
                 department=department,
                 date_of_joining=validated_data.get("date_of_joining"),
-                mobile=validated_data["mobile"],
-                email=validated_data["email"]
+                mobile=validated_data.get("mobile"),
+                email=validated_data["email"],
             )
-
         elif role == "HOD":
             FacultyProfile.objects.create(
                 user=user,
@@ -95,30 +81,28 @@ class RegisterSerializer(serializers.Serializer):
                 designation=validated_data.get("designation"),
                 department=department,
                 date_of_joining=validated_data.get("date_of_joining"),
-                mobile=validated_data["mobile"],
-                email=validated_data["email"]
+                mobile=validated_data.get("mobile"),
+                email=validated_data["email"],
             )
-
             HODProfile.objects.create(
                 user=user,
                 full_name=validated_data["full_name"],
                 department=department,
-                mobile=validated_data["mobile"],
-                email=validated_data["email"]
+                mobile=validated_data.get("mobile"),
+                email=validated_data["email"],
             )
             department.hod = user
-            department.save()
-
+            department.save(update_fields=["hod"])
         elif role == "PRINCIPAL":
             PrincipalProfile.objects.create(
                 user=user,
                 full_name=validated_data["full_name"],
-                mobile=validated_data["mobile"],
-                email=validated_data["email"]
+                mobile=validated_data.get("mobile"),
+                email=validated_data["email"],
             )
 
-
         return user
+
 
 class LoginSerializer(serializers.Serializer):
     username = serializers.CharField()
@@ -140,10 +124,7 @@ class LoginSerializer(serializers.Serializer):
         return data
 
 
-
-
 class AppraisalSerializer(serializers.ModelSerializer):
     class Meta:
         model = Appraisal
         fields = "__all__"
-

@@ -1,5 +1,5 @@
 from django.urls import path
-from api.views.auth import RegisterAPI, LoginAPI, LogoutView
+from api.views.auth import RegisterAPI, LoginAPI, LogoutView, ChangePasswordAPI
 from api.views.test import WhoAmI
 from api.views.faculty import FacultyAppraisalListAPI, FacultySubmitAPI, FacultyResubmitAPI
 from api.views.principal import PrincipalApproveAPI, PrincipalReturnAPI
@@ -46,6 +46,7 @@ urlpatterns = [
     path("login/", LoginAPI.as_view()),
     path("whoami/", WhoAmI.as_view()),
     path("logout/", LogoutView.as_view()),
+    path("auth/change-password/", ChangePasswordAPI.as_view()),
 
     #API ME
     path("me/", MeView.as_view()),

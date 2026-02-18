@@ -7,13 +7,14 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.permissions import IsAuthenticated
 from api.serializers import RegisterSerializer
+from api.permissions import IsAdmin
 
 
 # =========================
 # REGISTER
 # =========================
 class RegisterAPI(APIView):
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated, IsAdmin]
 
     def post(self, request):
         serializer = RegisterSerializer(data=request.data)
@@ -21,7 +22,7 @@ class RegisterAPI(APIView):
         serializer.save()
 
         return Response(
-            {"message": "User registered successfully"},
+            {"message": "User account created successfully"},
             status=status.HTTP_201_CREATED
         )
 
@@ -60,6 +61,7 @@ class LoginSerializer(TokenObtainPairSerializer):
             "department": user.department,
             "date_of_joining": date_of_joining,
             "date_joined": user.date_joined,
+            "must_change_password": user.must_change_password,
         }
         return data
 
@@ -97,3 +99,30 @@ class LogoutView(APIView):
                 {"detail": "Invalid token"},
                 status=status.HTTP_400_BAD_REQUEST
             )
+
+
+class ChangePasswordAPI(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        user = request.user
+        old_password = request.data.get("old_password")
+        new_password = request.data.get("new_password")
+
+        if not old_password or not new_password:
+            return Response(
+                {"detail": "old_password and new_password are required"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if not user.check_password(old_password):
+            return Response(
+                {"detail": "Old password is incorrect"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        user.set_password(new_password)
+        user.must_change_password = False
+        user.save(update_fields=["password", "must_change_password"])
+
+        return Response({"detail": "Password changed successfully"}, status=status.HTTP_200_OK)

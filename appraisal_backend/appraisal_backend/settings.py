@@ -92,9 +92,9 @@ WSGI_APPLICATION = 'appraisal_backend.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'appraisal_db_dp',
-        'USER': 'admin',
-        'PASSWORD': 'admin123',
+        'NAME': 'appraisal_db',
+        'USER': 'appraisal_manager',
+        'PASSWORD': 'appraisal@123',
         'HOST': 'localhost',
         'PORT': '5432',
     }
@@ -149,7 +149,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
+        'api.authentication.PasswordChangeEnforcedJWTAuthentication',
     ),
     'DEFAULT_PERMISSION_CLASSES': (
         'rest_framework.permissions.IsAuthenticated',

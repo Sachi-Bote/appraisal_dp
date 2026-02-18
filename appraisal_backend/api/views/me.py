@@ -62,6 +62,7 @@ class MeView(APIView):
             "username": user.username,
             "email": user.username,
             "role": user.role,
+            "must_change_password": user.must_change_password,
             "department": user.department,
             "date_joined": user.date_joined,
             "date_of_joining": date_of_joining,
@@ -75,7 +76,6 @@ class MeView(APIView):
         profile = None
         if user.role == "FACULTY":
             profile = FacultyProfile.objects.get(user=user)
-            profile.designation = request.data.get("designation", profile.designation)
         elif user.role == "HOD":
             profile = HODProfile.objects.get(user=user)
 

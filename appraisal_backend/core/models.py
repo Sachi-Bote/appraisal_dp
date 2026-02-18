@@ -58,6 +58,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
     is_superuser = models.BooleanField(default=False)  # 👈 ADD THIS
+    must_change_password = models.BooleanField(default=False)
     date_joined = models.DateField(default=timezone.now)
     mobile_number = models.CharField(max_length=15, null=True, blank=True)
     email = models.EmailField(max_length=100, null=True, blank=True)
