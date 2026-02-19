@@ -221,10 +221,10 @@ CORS_ALLOW_METHODS = [
 ]
 
 # PDF rendering engine options: "auto", "edge", "playwright", "xhtml2pdf"
-PDF_RENDER_ENGINE = "auto"
-PDF_ALLOW_FALLBACK = True
-EDGE_BROWSER_PATH = r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"
-PLAYWRIGHT_BROWSER_PATH = r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"
+PDF_RENDER_ENGINE = os.getenv("PDF_RENDER_ENGINE", "auto")
+PDF_ALLOW_FALLBACK = env_bool("PDF_ALLOW_FALLBACK", True)
+EDGE_BROWSER_PATH = os.getenv("EDGE_BROWSER_PATH", "")
+PLAYWRIGHT_BROWSER_PATH = os.getenv("PLAYWRIGHT_BROWSER_PATH", "")
 
 FRONTEND_BASE_URL = os.getenv("FRONTEND_BASE_URL", "http://localhost:5173")
 PASSWORD_RESET_EMAIL_FAIL_SILENTLY = env_bool("PASSWORD_RESET_EMAIL_FAIL_SILENTLY", DEBUG)

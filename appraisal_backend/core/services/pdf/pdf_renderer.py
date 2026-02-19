@@ -28,6 +28,10 @@ def _render_with_playwright(html: str) -> bytes:
     browser_paths.extend([
         r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe",
         r"C:\Program Files\Google\Chrome\Application\chrome.exe",
+        "/usr/bin/chromium-browser",
+        "/usr/bin/chromium",
+        "/usr/bin/google-chrome",
+        "/usr/bin/google-chrome-stable",
     ])
 
     with sync_playwright() as p:
@@ -41,6 +45,13 @@ def _render_with_playwright(html: str) -> bytes:
                     break
                 except Exception as e:
                     launch_errors.append(str(e))
+
+        if browser is None:
+            try:
+                # Use Playwright managed browser when installed at build-time.
+                browser = p.chromium.launch(headless=True)
+            except Exception as e:
+                launch_errors.append(str(e))
 
         if browser is None:
             try:
