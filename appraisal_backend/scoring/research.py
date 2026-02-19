@@ -34,6 +34,10 @@ POINTS = {
     "econtent_module": 5,
     "econtent_contribution": 2,
     "econtent_editor": 10,
+    # Frontend alias keys used by current appraisal form payload.
+    "econtent_4quadrant_complete": 12,
+    "econtent_4quadrant_per_module": 5,
+    "econtent_module_contribution": 2,
 
     # 4. Research Guidance
     "phd_awarded": 10,

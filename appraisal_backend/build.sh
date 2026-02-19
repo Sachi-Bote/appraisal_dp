@@ -3,7 +3,9 @@ set -o errexit
 
 pip install --upgrade pip
 pip install -r requirements.txt
-python -m playwright install chromium
+# Install Chromium and OS deps where permitted. Fallback keeps build working
+# in environments where --with-deps isn't allowed.
+python -m playwright install --with-deps chromium || python -m playwright install chromium
 python manage.py collectstatic --no-input
 python manage.py migrate
 python manage.py shell -c "

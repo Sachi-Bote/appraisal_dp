@@ -5,9 +5,6 @@ from rest_framework.permissions import IsAuthenticated
 from core.models import Appraisal
 from api.permissions import IsFaculty, IsHOD
 from workflow.states import States
-from django.http import FileResponse
-from core.models import GeneratedPDF
-import os
 from core.services.sppu_verified import extract_verified_grading, TABLE2_VERIFIED_KEYS
 from scoring.engine import calculate_full_score
 from core.services.pdf.enhanced_sppu_mapper import get_enhanced_sppu_pdf_data
@@ -289,35 +286,10 @@ class DownloadAppraisalPDF(APIView):
         if not (is_owner or is_principal or is_hod):
             return Response({"error": "Unauthorized"}, status=403)
 
-        # Default keeps old behavior (SPPU). Caller can request ?pdf_type=PBAS.
+        # Keep endpoint contract, but route to enhanced renderers so old clients
+        # do not receive legacy xhtml2pdf output.
         requested_type = (request.query_params.get("pdf_type") or "SPPU").upper()
-        pattern = "AICTE_PBAS" if requested_type == "PBAS" else "SPPU_PBAS"
-
-        # Ensure finalized/principal-approved appraisals are downloadable.
-        self._ensure_finalized_pdfs(appraisal)
-
-        try:
-            pdf_record = GeneratedPDF.objects.filter(
-                appraisal=appraisal,
-                pdf_path__icontains=pattern
-            ).latest("generated_at")
-
-            if not os.path.exists(pdf_record.pdf_path):
-                # Retry once for completed appraisals if file is missing.
-                self._ensure_finalized_pdfs(appraisal)
-                pdf_record = GeneratedPDF.objects.filter(
-                    appraisal=appraisal,
-                    pdf_path__icontains=pattern
-                ).latest("generated_at")
-                if not os.path.exists(pdf_record.pdf_path):
-                    return Response({"error": "PDF file not found on server"}, status=404)
-
-            return FileResponse(open(pdf_record.pdf_path, "rb"), content_type="application/pdf")
-        except GeneratedPDF.DoesNotExist:
-            # Backward-compatible fallback to any generated PDF.
-            try:
-                self._ensure_finalized_pdfs(appraisal)
-                pdf_record = GeneratedPDF.objects.filter(appraisal=appraisal).latest("generated_at")
-                return FileResponse(open(pdf_record.pdf_path, "rb"), content_type="application/pdf")
-            except GeneratedPDF.DoesNotExist:
-                return Response({"error": "PDF not generated yet"}, status=404)
+        from core.views.pdf_views import generate_enhanced_pbas_pdf, generate_enhanced_sppu_pdf
+        if requested_type == "PBAS":
+            return generate_enhanced_pbas_pdf(request, appraisal_id)
+        return generate_enhanced_sppu_pdf(request, appraisal_id)

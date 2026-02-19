@@ -170,13 +170,13 @@ def render_to_pdf(template_path: str, context: dict) -> HttpResponse:
     return response
 
 
-def save_pdf_to_disk(template_path: str, context: dict, filename: str) -> str:
+def save_pdf_to_disk(template_path: str, context: dict, filename: str) -> tuple[str, str]:
     """
-    Render PDF and save to disk, returning the file path.
+    Render PDF and save to disk, returning (file_path, engine_name).
     """
     template = get_template(template_path)
     html = template.render(context)
-    pdf_bytes, _ = _render_pdf_bytes(html)
+    pdf_bytes, used_engine = _render_pdf_bytes(html)
         
     # Define save directory
 
@@ -191,5 +191,5 @@ def save_pdf_to_disk(template_path: str, context: dict, filename: str) -> str:
     
     with open(file_path, 'wb') as f:
         f.write(pdf_bytes)
-        
-    return file_path
+
+    return file_path, used_engine

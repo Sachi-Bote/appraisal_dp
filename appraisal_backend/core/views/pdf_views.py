@@ -15,7 +15,7 @@ def _save_pdf_and_return_response(appraisal, template_path, context, filename):
     Falls back to direct render when save fails.
     """
     try:
-        file_path = save_pdf_to_disk(template_path, context, filename)
+        file_path, used_engine = save_pdf_to_disk(template_path, context, filename)
 
         GeneratedPDF.objects.create(
             appraisal=appraisal,
@@ -27,6 +27,7 @@ def _save_pdf_and_return_response(appraisal, template_path, context, filename):
 
         response = HttpResponse(pdf_content, content_type='application/pdf')
         response['Content-Disposition'] = f'attachment; filename="{filename}"'
+        response['X-PDF-Engine'] = used_engine
         return response
     except Exception:
         return render_to_pdf(template_path, context)
