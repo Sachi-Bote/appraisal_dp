@@ -38,7 +38,12 @@ class UserAdmin(admin.ModelAdmin):
             department_name = (obj.department or "").strip()
             department = Department.objects.filter(department_name__iexact=department_name).first()
             if not department:
-                department = Department.objects.create(department_name=department_name)
+                raise ValidationError(
+                    (
+                        f"Department '{department_name}' does not exist. "
+                        "Please use an existing department name."
+                    )
+                )
             obj.department = department.department_name
 
             if obj.role == "HOD":

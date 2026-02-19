@@ -44,7 +44,14 @@ class RegisterSerializer(serializers.Serializer):
                 department_name__iexact=department_name
             ).first()
             if not department:
-                department = Department.objects.create(department_name=department_name)
+                raise serializers.ValidationError(
+                    {
+                        "department": (
+                            f"Department '{department_name}' does not exist. "
+                            "Use an existing department name configured by admin."
+                        )
+                    }
+                )
 
         if role == "HOD" and HODProfile.objects.filter(department=department).exists():
             raise serializers.ValidationError(
