@@ -8,8 +8,43 @@ import subprocess
 import tempfile
 from pathlib import Path
 import logging
+from glob import glob
 
 logger = logging.getLogger(__name__)
+
+
+def _discover_playwright_binaries() -> list[str]:
+    """
+    Discover Chromium/headless-shell binaries installed by Playwright.
+    """
+    roots = []
+    env_root = os.getenv("PLAYWRIGHT_BROWSERS_PATH", "").strip()
+    if env_root:
+        roots.append(env_root)
+    roots.append(str(Path.cwd() / ".playwright"))
+
+    candidates: list[str] = []
+    for root in roots:
+        if not root or not os.path.exists(root):
+            continue
+        patterns = [
+            os.path.join(root, "chromium-*", "**", "chrome"),
+            os.path.join(root, "chromium_headless_shell-*", "**", "headless_shell"),
+        ]
+        for pattern in patterns:
+            for match in glob(pattern, recursive=True):
+                if os.path.exists(match):
+                    candidates.append(match)
+
+    # Preserve order and remove duplicates.
+    seen = set()
+    ordered = []
+    for c in candidates:
+        if c in seen:
+            continue
+        seen.add(c)
+        ordered.append(c)
+    return ordered
 
 
 def _render_with_xhtml2pdf(html: str) -> bytes:
@@ -28,6 +63,7 @@ def _render_with_playwright(html: str) -> bytes:
 
     configured_path = getattr(settings, "PLAYWRIGHT_BROWSER_PATH", "") or ""
     browser_paths = [configured_path] if configured_path else []
+    browser_paths.extend(_discover_playwright_binaries())
     browser_paths.extend([
         r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe",
         r"C:\Program Files\Google\Chrome\Application\chrome.exe",
@@ -52,22 +88,28 @@ def _render_with_playwright(html: str) -> bytes:
                     )
                     break
                 except Exception as e:
-                    launch_errors.append(str(e))
+                    launch_errors.append(f"{candidate}: {e}")
 
         if browser is None:
             try:
                 # Use Playwright managed browser when installed at build-time.
                 browser = p.chromium.launch(headless=True, args=launch_args)
             except Exception as e:
-                launch_errors.append(str(e))
+                launch_errors.append(f"managed-browser: {e}")
 
         if browser is None:
             try:
                 browser = p.chromium.launch(headless=True, channel="msedge", args=launch_args)
             except Exception as e:
-                launch_errors.append(str(e))
+                launch_errors.append(f"channel-msedge: {e}")
 
         if browser is None:
+            logger.error(
+                "Playwright launch failed. PLAYWRIGHT_BROWSERS_PATH=%s candidates=%s errors=%s",
+                os.getenv("PLAYWRIGHT_BROWSERS_PATH", ""),
+                browser_paths,
+                launch_errors,
+            )
             raise Exception("Playwright browser launch failed: " + " | ".join(launch_errors))
 
         try:
