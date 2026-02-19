@@ -40,11 +40,16 @@ def _render_with_playwright(html: str) -> bytes:
     with sync_playwright() as p:
         browser = None
         launch_errors = []
+        launch_args = ["--no-sandbox", "--disable-dev-shm-usage"]
 
         for candidate in browser_paths:
             if candidate and os.path.exists(candidate):
                 try:
-                    browser = p.chromium.launch(headless=True, executable_path=candidate)
+                    browser = p.chromium.launch(
+                        headless=True,
+                        executable_path=candidate,
+                        args=launch_args,
+                    )
                     break
                 except Exception as e:
                     launch_errors.append(str(e))
@@ -52,13 +57,13 @@ def _render_with_playwright(html: str) -> bytes:
         if browser is None:
             try:
                 # Use Playwright managed browser when installed at build-time.
-                browser = p.chromium.launch(headless=True)
+                browser = p.chromium.launch(headless=True, args=launch_args)
             except Exception as e:
                 launch_errors.append(str(e))
 
         if browser is None:
             try:
-                browser = p.chromium.launch(headless=True, channel="msedge")
+                browser = p.chromium.launch(headless=True, channel="msedge", args=launch_args)
             except Exception as e:
                 launch_errors.append(str(e))
 
@@ -133,6 +138,7 @@ def _render_pdf_bytes(html: str) -> tuple[bytes, str]:
             return _render_with_playwright(html), "playwright"
         except Exception as e:
             if allow_fallback:
+                logger.warning("Playwright render failed; using xhtml2pdf fallback. error=%s", e)
                 return _render_with_xhtml2pdf(html), "xhtml2pdf-fallback"
             raise Exception(f"Playwright rendering failed and fallback disabled: {e}")
 
@@ -147,6 +153,7 @@ def _render_pdf_bytes(html: str) -> tuple[bytes, str]:
             return _render_with_playwright(html), "playwright"
         except Exception as e:
             if allow_fallback:
+                logger.warning("Playwright render failed in auto mode; using xhtml2pdf fallback. error=%s", e)
                 return _render_with_xhtml2pdf(html), "xhtml2pdf-fallback"
             raise Exception(f"Playwright rendering failed and fallback disabled: {e}")
 
