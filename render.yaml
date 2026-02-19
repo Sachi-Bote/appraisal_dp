@@ -80,3 +80,5 @@ services:
         value: "playwright"
       - key: PDF_ALLOW_FALLBACK
         value: "False"
+      - key: PLAYWRIGHT_BROWSERS_PATH
+        value: /opt/render/project/src/appraisal_backend/.playwright

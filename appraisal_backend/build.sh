@@ -3,6 +3,10 @@ set -o errexit
 
 pip install --upgrade pip
 pip install -r requirements.txt
+# Keep Playwright browser binaries inside project dir so build artifact and
+# runtime use the same location.
+export PLAYWRIGHT_BROWSERS_PATH="$PWD/.playwright"
+mkdir -p "$PLAYWRIGHT_BROWSERS_PATH"
 # Install Chromium and OS deps where permitted. Fallback keeps build working
 # in environments where --with-deps isn't allowed.
 python -m playwright install --with-deps chromium || python -m playwright install chromium
