@@ -170,7 +170,7 @@ class ForgotPasswordRequestAPI(APIView):
                 message=f"Use this link to reset your password: {reset_link}",
                 from_email=getattr(settings, "DEFAULT_FROM_EMAIL", None),
                 recipient_list=[user.email or user.username],
-                fail_silently=True,
+                fail_silently=getattr(settings, "PASSWORD_RESET_EMAIL_FAIL_SILENTLY", settings.DEBUG),
             )
 
             if settings.DEBUG:
