@@ -7,6 +7,9 @@ from core.services.pdf.enhanced_pbas_mapper import get_enhanced_pbas_pdf_data
 from core.services.pdf.pdf_renderer import render_to_pdf, save_pdf_to_disk
 import os
 from django.http import HttpResponse
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def _save_pdf_and_return_response(appraisal, template_path, context, filename):
@@ -30,6 +33,11 @@ def _save_pdf_and_return_response(appraisal, template_path, context, filename):
         response['X-PDF-Engine'] = used_engine
         return response
     except Exception:
+        logger.exception(
+            "Failed to save generated PDF '%s' for appraisal %s; falling back to direct response render.",
+            filename,
+            getattr(appraisal, "appraisal_id", "unknown"),
+        )
         return render_to_pdf(template_path, context)
 
 

@@ -7,6 +7,9 @@ import os
 import subprocess
 import tempfile
 from pathlib import Path
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def _render_with_xhtml2pdf(html: str) -> bytes:
@@ -143,7 +146,7 @@ def _render_pdf_bytes(html: str) -> tuple[bytes, str]:
         try:
             return _render_with_playwright(html), "playwright"
         except Exception as e:
-            if allow_fallback or engine == "auto":
+            if allow_fallback:
                 return _render_with_xhtml2pdf(html), "xhtml2pdf-fallback"
             raise Exception(f"Playwright rendering failed and fallback disabled: {e}")
 
@@ -156,7 +159,8 @@ def render_to_pdf(template_path: str, context: dict) -> HttpResponse:
     html = template.render(context)
     try:
         pdf_bytes, used_engine = _render_pdf_bytes(html)
-    except Exception:
+    except Exception as exc:
+        logger.exception("PDF generation failed for template '%s': %s", template_path, exc)
         return HttpResponse(
             "Error generating PDF",
             status=500
