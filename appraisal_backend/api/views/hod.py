@@ -18,6 +18,7 @@ from core.services.sppu_verified import (
     merge_verified_grading,
     derive_overall_grade,
 )
+from scoring.activity_selection import normalize_activity_payload
 
 
 def _get_hod_department(user):
@@ -58,6 +59,8 @@ class HODSubmitAPI(APIView):
 
         if not payload:
             return Response({"error": "appraisal_data is required"}, status=400)
+
+        payload["activities"] = normalize_activity_payload(payload.get("activities", {}))
 
         submit_action = payload.get("submit_action", "submit").lower()
 
@@ -197,6 +200,7 @@ class HODResubmitAPI(APIView):
 
         # update data
         data = request.data["appraisal_data"]
+        data["activities"] = normalize_activity_payload(data.get("activities", {}))
         appraisal.appraisal_data = data
 
         submit_action = data.get("submit_action", "submit").lower()

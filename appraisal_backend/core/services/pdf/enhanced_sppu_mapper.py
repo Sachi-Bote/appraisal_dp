@@ -1,4 +1,4 @@
-from typing import Dict, List
+from typing import Dict
 from core.models import Appraisal
 from .data_mapper import get_common_pdf_data
 from scoring.engine import calculate_full_score
@@ -8,33 +8,7 @@ from core.services.sppu_verified import (
     extract_verified_grading,
     TABLE2_VERIFIED_KEYS,
 )
-
-
-def _to_bool(value) -> bool:
-    """
-    Normalize frontend payload values to boolean.
-    Handles bool, int, and string values like Yes/No, True/False, 1/0.
-    """
-    if isinstance(value, bool):
-        return value
-    if value is None:
-        return False
-    if isinstance(value, (int, float)):
-        return value != 0
-    if isinstance(value, str):
-        normalized = value.strip().lower()
-        if normalized in {"true", "yes", "y", "1", "on"}:
-            return True
-        if normalized in {"false", "no", "n", "0", "off", ""}:
-            return False
-    return bool(value)
-
-
-def _get_first_key(data: Dict, keys: List[str], default=False):
-    for key in keys:
-        if key in data:
-            return data.get(key)
-    return default
+from scoring.activity_selection import derive_activity_flags
 
 
 def _has_meaningful_research_data(entry: Dict) -> bool:
@@ -55,75 +29,40 @@ def _has_meaningful_research_data(entry: Dict) -> bool:
 
 
 def _build_activity_flags(raw: Dict) -> Dict[str, bool]:
-    """
-    Resolve activity flags from multiple payload shapes used by frontend versions.
-    Priority: explicit per-activity fields. Category-derived mapping is optional.
-    """
-    activities = raw.get("activities", {})
+    combined = {
+        "a_administrative": False,
+        "b_exam_duties": False,
+        "c_student_related": False,
+        "d_organizing_events": False,
+        "e_phd_guidance": False,
+        "f_research_project": False,
+        "g_sponsored_project": False,
+    }
     sources = []
-    if isinstance(activities, dict):
-        sources.append(activities)
+    for key in ("activities", "step2b", "section_b", "sectionB", "sppu"):
+        data = raw.get(key)
+        if isinstance(data, dict):
+            sources.append(data)
+            nested = data.get("activities")
+            if isinstance(nested, dict):
+                sources.append(nested)
 
-    pbas = raw.get("pbas", {})
+    pbas = raw.get("pbas")
     if isinstance(pbas, dict):
-        pbas_activities = pbas.get("activities", {})
+        sources.append(pbas)
+        pbas_activities = pbas.get("activities")
         if isinstance(pbas_activities, dict):
             sources.append(pbas_activities)
-        step2b = pbas.get("step2b", {})
+        step2b = pbas.get("step2b")
         if isinstance(step2b, dict):
             sources.append(step2b)
 
-    for key in ("step2b", "section_b", "sectionB", "sppu"):
-        section = raw.get(key, {})
-        if isinstance(section, dict):
-            section_activities = section.get("activities", {})
-            if isinstance(section_activities, dict):
-                sources.append(section_activities)
-            sources.append(section)
-
-    key_aliases = {
-        "a_administrative": ["administrative_responsibility", "administrativeResponsibilities", "administrative", "a", "activity_a"],
-        "b_exam_duties": ["exam_duties", "examDuties", "examination_duties", "examinationDuties", "b", "activity_b"],
-        "c_student_related": ["student_related", "studentRelated", "student_related_activities", "studentRelatedActivities", "c", "activity_c"],
-        "d_organizing_events": ["organizing_events", "organizingEvents", "organizing_seminars", "organizingSeminars", "d", "activity_d"],
-        "e_phd_guidance": ["phd_guidance", "phdGuidance", "guiding_phd_students", "guidingPhdStudents", "e", "activity_e"],
-        "f_research_project": ["research_project", "researchProject", "conducting_research_projects", "conductingResearchProjects", "f", "activity_f"],
-        "g_sponsored_project": ["sponsored_project", "sponsoredProject", "publication_in_ugc", "publicationInUgc", "g", "activity_g"],
-    }
-
-    resolved = {k: None for k in key_aliases}
-
     for src in sources:
-        if not isinstance(src, dict):
-            continue
-        for target, aliases in key_aliases.items():
-            if resolved[target] is not None:
-                continue
-            for alias in aliases:
-                if alias in src:
-                    value = src.get(alias)
-                    resolved[target] = _to_bool(value)
-                    break
+        flags = derive_activity_flags(src)
+        for key in combined:
+            combined[key] = combined[key] or flags.get(key, False)
 
-    # Optional legacy mapping: derive from departmental/institute/society if explicit flags are absent.
-    if all(v is None for v in resolved.values()):
-        use_legacy_derivation = False  # DISABLED - frontend should send individual flags
-        if use_legacy_derivation and isinstance(activities, dict):
-            departmental = _to_bool(_get_first_key(activities, ["departmental", "departmental_activities", "departmentalActivities"], False))
-            institute = _to_bool(_get_first_key(activities, ["institute", "institute_activities", "instituteActivities"], False))
-            society = _to_bool(_get_first_key(activities, ["society", "society_activities", "societyActivities"], False))
-            resolved = {
-                "a_administrative": departmental,
-                "b_exam_duties": departmental,
-                "c_student_related": society,
-                "d_organizing_events": institute,
-                "e_phd_guidance": departmental,
-                "f_research_project": departmental or institute,
-                "g_sponsored_project": institute,
-            }
-
-    # Ensure None values are converted to False
-    return {k: bool(v) if v is not None else False for k, v in resolved.items()}
+    return combined
 
 
 def get_enhanced_sppu_pdf_data(appraisal: Appraisal) -> Dict:

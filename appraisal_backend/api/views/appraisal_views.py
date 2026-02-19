@@ -11,6 +11,7 @@ import os
 from core.services.sppu_verified import extract_verified_grading, TABLE2_VERIFIED_KEYS
 from scoring.engine import calculate_full_score
 from core.services.pdf.enhanced_sppu_mapper import get_enhanced_sppu_pdf_data
+from scoring.activity_selection import get_activity_sections
 
 
 class CurrentFacultyAppraisalAPIView(APIView):
@@ -60,7 +61,8 @@ class CurrentFacultyAppraisalAPIView(APIView):
             "semester": appraisal.semester,
             "form_type": appraisal.form_type,
             "appraisal_data": appraisal.appraisal_data,
-            "remarks": appraisal.remarks
+            "remarks": appraisal.remarks,
+            "activity_sections": get_activity_sections(),
         }
         return Response(data)
 
@@ -227,6 +229,7 @@ class AppraisalDetailAPI(APIView):
             "verifier_role": verifier_role,
             "verified_grade_options": ["Good", "Satisfactory", "Not Satisfactory"],
             "table2_verified_keys": TABLE2_VERIFIED_KEYS,
+            "activity_sections": get_activity_sections(),
             "faculty": {
                 "name": appraisal.faculty.full_name,
                 "department": appraisal.faculty.department.department_name,

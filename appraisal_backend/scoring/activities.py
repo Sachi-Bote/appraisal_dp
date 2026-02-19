@@ -1,4 +1,5 @@
 from decimal import Decimal, InvalidOperation
+from scoring.activity_selection import normalize_activity_payload
 
 
 def calculate_sppu_activity_score(payload: dict) -> dict:
@@ -12,8 +13,8 @@ def calculate_sppu_activity_score(payload: dict) -> dict:
     }
     """
 
-    # Count only explicit True values
-    yes_count = sum(1 for v in payload.values() if v is True)
+    normalized = normalize_activity_payload(payload)
+    yes_count = int(normalized.get("yes_count", 0))
 
     if yes_count >= 3:
         grade = "Good"
@@ -29,6 +30,7 @@ def calculate_sppu_activity_score(payload: dict) -> dict:
         "yes_count": yes_count,
         "grade": grade,
         "score": score,
+        "flags": normalized.get("section_flags", {}),
     }
 
 

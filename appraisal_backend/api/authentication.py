@@ -10,6 +10,8 @@ class PasswordChangeEnforcedJWTAuthentication(JWTAuthentication):
         "/api/login/",
         "/api/logout/",
         "/api/auth/change-password/",
+        "/api/auth/forgot-password/",
+        "/api/auth/reset-password/",
         "/api/me/",
     }
 

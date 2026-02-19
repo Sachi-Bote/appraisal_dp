@@ -16,6 +16,7 @@ from scoring.activities import (
     calculate_institute_activity_score,
     calculate_society_activity_score,
 )
+from scoring.activity_selection import derive_activity_flags
 
 # Top-level required keys for a single appraisal submission payload
 TOP_LEVEL_REQUIRED = {
@@ -146,7 +147,7 @@ def validate_full_form(payload: Dict, meta: Dict) -> Tuple[bool, str]:
 
     # ---------- SANITY CHECK ----------
     research_sum = sum(int(v) for v in payload["research"].values() if isinstance(v, int))
-    activity_sum = sum(int(v) for v in payload["activities"].values() if isinstance(v, int))
+    activity_sum = sum(1 for yes in derive_activity_flags(payload["activities"]).values() if yes)
 
     if research_sum == 0 and activity_sum == 0:
         return False, "Submission appears empty: no research or activities."

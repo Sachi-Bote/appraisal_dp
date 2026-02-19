@@ -3,6 +3,7 @@ from core.models import Appraisal
 from .data_mapper import get_common_pdf_data
 from scoring.engine import calculate_full_score
 from decimal import Decimal
+from scoring.activity_selection import derive_activity_flags
 
 
 def get_comprehensive_pdf_data(appraisal: Appraisal) -> Dict:
@@ -62,14 +63,15 @@ def get_comprehensive_pdf_data(appraisal: Appraisal) -> Dict:
     }
     
     # Format activities data
+    section_flags = derive_activity_flags(activities)
     activities_data = {
-        "administrative_responsibility": activities.get("administrative_responsibility", False),
-        "exam_duties": activities.get("exam_duties", False),
-        "student_related": activities.get("student_related", False),
-        "organizing_events": activities.get("organizing_events", False),
-        "phd_guidance": activities.get("phd_guidance", False),
-        "research_project": activities.get("research_project", False),
-        "sponsored_project": activities.get("sponsored_project", False),
+        "administrative_responsibility": section_flags.get("a_administrative", False),
+        "exam_duties": section_flags.get("b_exam_duties", False),
+        "student_related": section_flags.get("c_student_related", False),
+        "organizing_events": section_flags.get("d_organizing_events", False),
+        "phd_guidance": section_flags.get("e_phd_guidance", False),
+        "research_project": section_flags.get("f_research_project", False),
+        "sponsored_project": section_flags.get("g_sponsored_project", False),
     }
     
     # Format research data
