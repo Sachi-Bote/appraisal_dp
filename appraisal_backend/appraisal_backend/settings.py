@@ -221,10 +221,13 @@ CORS_ALLOW_METHODS = [
 ]
 
 # PDF rendering engine options: "auto", "edge", "playwright", "xhtml2pdf"
-# In production, prefer Playwright and disable silent fallback by default
-# so rendering issues are visible in logs instead of shipping degraded PDFs.
-PDF_RENDER_ENGINE = os.getenv("PDF_RENDER_ENGINE", "playwright" if not DEBUG else "auto")
-PDF_ALLOW_FALLBACK = env_bool("PDF_ALLOW_FALLBACK", DEBUG)
+# Force strict behavior in production: Playwright only, no silent fallback.
+if DEBUG:
+    PDF_RENDER_ENGINE = os.getenv("PDF_RENDER_ENGINE", "auto")
+    PDF_ALLOW_FALLBACK = env_bool("PDF_ALLOW_FALLBACK", True)
+else:
+    PDF_RENDER_ENGINE = "playwright"
+    PDF_ALLOW_FALLBACK = False
 EDGE_BROWSER_PATH = os.getenv("EDGE_BROWSER_PATH", "")
 PLAYWRIGHT_BROWSER_PATH = os.getenv("PLAYWRIGHT_BROWSER_PATH", "")
 
