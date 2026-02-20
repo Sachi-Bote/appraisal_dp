@@ -9,8 +9,10 @@ import tempfile
 from pathlib import Path
 import logging
 from glob import glob
+from time import perf_counter
 
 logger = logging.getLogger(__name__)
+perf_logger = logging.getLogger("api.performance")
 
 
 def _discover_playwright_binaries() -> list[str]:
@@ -48,10 +50,16 @@ def _discover_playwright_binaries() -> list[str]:
 
 
 def _render_with_xhtml2pdf(html: str) -> bytes:
+    started = perf_counter()
     result = BytesIO()
     pdf = pisa.pisaDocument(BytesIO(html.encode("utf-8")), result)
     if pdf.err:
         raise Exception("Error generating PDF with xhtml2pdf")
+    perf_logger.info(
+        "pdf.engine_timing engine=xhtml2pdf html_size=%s duration_ms=%.2f",
+        len(html),
+        (perf_counter() - started) * 1000,
+    )
     return result.getvalue()
 
 
@@ -73,6 +81,8 @@ def _render_with_playwright(html: str) -> bytes:
         "/usr/bin/google-chrome-stable",
     ])
 
+    started = perf_counter()
+    launch_started = perf_counter()
     with sync_playwright() as p:
         browser = None
         launch_errors = []
@@ -111,14 +121,24 @@ def _render_with_playwright(html: str) -> bytes:
                 launch_errors,
             )
             raise Exception("Playwright browser launch failed: " + " | ".join(launch_errors))
+        launch_ms = (perf_counter() - launch_started) * 1000
 
         try:
+            pdf_started = perf_counter()
             page = browser.new_page()
             page.set_content(html, wait_until="load")
             pdf_bytes = page.pdf(
                 format="A4",
                 print_background=True,
                 prefer_css_page_size=True,
+            )
+            pdf_ms = (perf_counter() - pdf_started) * 1000
+            perf_logger.info(
+                "pdf.engine_timing engine=playwright html_size=%s launch_ms=%.2f pdf_ms=%.2f total_ms=%.2f",
+                len(html),
+                launch_ms,
+                pdf_ms,
+                (perf_counter() - started) * 1000,
             )
             return pdf_bytes
         finally:
@@ -130,6 +150,7 @@ def _render_with_edge_cli(html: str) -> bytes:
     Render PDF using local Microsoft Edge headless CLI.
     This avoids requiring Playwright/Python package in runtime.
     """
+    started = perf_counter()
     edge_path = getattr(settings, "EDGE_BROWSER_PATH", "") or r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"
     if not os.path.exists(edge_path):
         raise Exception(f"Edge executable not found at: {edge_path}")
@@ -154,7 +175,9 @@ def _render_with_edge_cli(html: str) -> bytes:
             file_uri,
         ]
 
+        render_started = perf_counter()
         proc = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
+        render_ms = (perf_counter() - render_started) * 1000
 
         if proc.returncode != 0 or not os.path.exists(pdf_path):
             stderr = (proc.stderr or "").strip()
@@ -162,50 +185,118 @@ def _render_with_edge_cli(html: str) -> bytes:
             raise Exception(f"Edge CLI PDF generation failed. rc={proc.returncode} stderr={stderr} stdout={stdout}")
 
         with open(pdf_path, "rb") as f:
-            return f.read()
+            pdf_bytes = f.read()
+        perf_logger.info(
+            "pdf.engine_timing engine=edge-cli html_size=%s cli_ms=%.2f total_ms=%.2f",
+            len(html),
+            render_ms,
+            (perf_counter() - started) * 1000,
+        )
+        return pdf_bytes
 
 
 def _render_pdf_bytes(html: str) -> tuple[bytes, str]:
+    started = perf_counter()
     engine = getattr(settings, "PDF_RENDER_ENGINE", "auto").lower()
     allow_fallback = getattr(settings, "PDF_ALLOW_FALLBACK", True)
 
     if engine == "xhtml2pdf":
-        return _render_with_xhtml2pdf(html), "xhtml2pdf"
+        out = _render_with_xhtml2pdf(html), "xhtml2pdf"
+        perf_logger.info(
+            "pdf.render_pipeline_timing engine_config=%s selected=%s total_ms=%.2f",
+            engine,
+            out[1],
+            (perf_counter() - started) * 1000,
+        )
+        return out
 
     if engine == "edge":
-        return _render_with_edge_cli(html), "edge-cli"
+        out = _render_with_edge_cli(html), "edge-cli"
+        perf_logger.info(
+            "pdf.render_pipeline_timing engine_config=%s selected=%s total_ms=%.2f",
+            engine,
+            out[1],
+            (perf_counter() - started) * 1000,
+        )
+        return out
 
     if engine == "playwright":
         try:
-            return _render_with_playwright(html), "playwright"
+            out = _render_with_playwright(html), "playwright"
+            perf_logger.info(
+                "pdf.render_pipeline_timing engine_config=%s selected=%s total_ms=%.2f",
+                engine,
+                out[1],
+                (perf_counter() - started) * 1000,
+            )
+            return out
         except Exception as e:
             if allow_fallback:
                 logger.warning("Playwright render failed; using xhtml2pdf fallback. error=%s", e)
-                return _render_with_xhtml2pdf(html), "xhtml2pdf-fallback"
+                out = _render_with_xhtml2pdf(html), "xhtml2pdf-fallback"
+                perf_logger.info(
+                    "pdf.render_pipeline_timing engine_config=%s selected=%s fallback=true total_ms=%.2f",
+                    engine,
+                    out[1],
+                    (perf_counter() - started) * 1000,
+                )
+                return out
             raise Exception(f"Playwright rendering failed and fallback disabled: {e}")
 
     if engine in {"playwright", "auto"}:
         # Try Edge CLI first (no Python Playwright dependency)
         try:
-            return _render_with_edge_cli(html), "edge-cli"
+            out = _render_with_edge_cli(html), "edge-cli"
+            perf_logger.info(
+                "pdf.render_pipeline_timing engine_config=%s selected=%s total_ms=%.2f",
+                engine,
+                out[1],
+                (perf_counter() - started) * 1000,
+            )
+            return out
         except Exception:
             pass
 
         try:
-            return _render_with_playwright(html), "playwright"
+            out = _render_with_playwright(html), "playwright"
+            perf_logger.info(
+                "pdf.render_pipeline_timing engine_config=%s selected=%s total_ms=%.2f",
+                engine,
+                out[1],
+                (perf_counter() - started) * 1000,
+            )
+            return out
         except Exception as e:
             if allow_fallback:
                 logger.warning("Playwright render failed in auto mode; using xhtml2pdf fallback. error=%s", e)
-                return _render_with_xhtml2pdf(html), "xhtml2pdf-fallback"
+                out = _render_with_xhtml2pdf(html), "xhtml2pdf-fallback"
+                perf_logger.info(
+                    "pdf.render_pipeline_timing engine_config=%s selected=%s fallback=true total_ms=%.2f",
+                    engine,
+                    out[1],
+                    (perf_counter() - started) * 1000,
+                )
+                return out
             raise Exception(f"Playwright rendering failed and fallback disabled: {e}")
 
     # Unknown engine -> safe fallback
-    return _render_with_xhtml2pdf(html), "xhtml2pdf-fallback"
+    out = _render_with_xhtml2pdf(html), "xhtml2pdf-fallback"
+    perf_logger.info(
+        "pdf.render_pipeline_timing engine_config=%s selected=%s fallback=true total_ms=%.2f",
+        engine,
+        out[1],
+        (perf_counter() - started) * 1000,
+    )
+    return out
 
 
 def render_to_pdf(template_path: str, context: dict) -> HttpResponse:
+    started = perf_counter()
+    template_started = perf_counter()
     template = get_template(template_path)
     html = template.render(context)
+    template_ms = (perf_counter() - template_started) * 1000
+    render_started = perf_counter()
     try:
         pdf_bytes, used_engine = _render_pdf_bytes(html)
     except Exception as exc:
@@ -214,12 +305,22 @@ def render_to_pdf(template_path: str, context: dict) -> HttpResponse:
             "Error generating PDF",
             status=500
         )
+    render_ms = (perf_counter() - render_started) * 1000
 
     response = HttpResponse(
         pdf_bytes,
         content_type="application/pdf"
     )
     response["X-PDF-Engine"] = used_engine
+    perf_logger.info(
+        "pdf.response_timing template=%s engine=%s template_ms=%.2f render_ms=%.2f total_ms=%.2f bytes=%s",
+        template_path,
+        used_engine,
+        template_ms,
+        render_ms,
+        (perf_counter() - started) * 1000,
+        len(pdf_bytes),
+    )
     return response
 
 
@@ -227,9 +328,14 @@ def save_pdf_to_disk(template_path: str, context: dict, filename: str) -> tuple[
     """
     Render PDF and save to disk, returning (file_path, engine_name).
     """
+    started = perf_counter()
+    template_started = perf_counter()
     template = get_template(template_path)
     html = template.render(context)
+    template_ms = (perf_counter() - template_started) * 1000
+    render_started = perf_counter()
     pdf_bytes, used_engine = _render_pdf_bytes(html)
+    render_ms = (perf_counter() - render_started) * 1000
         
     # Define save directory
 
@@ -241,8 +347,20 @@ def save_pdf_to_disk(template_path: str, context: dict, filename: str) -> tuple[
         
     os.makedirs(output_dir, exist_ok=True)
     file_path = os.path.join(output_dir, filename)
-    
+    write_started = perf_counter()
     with open(file_path, 'wb') as f:
         f.write(pdf_bytes)
+    write_ms = (perf_counter() - write_started) * 1000
+    perf_logger.info(
+        "pdf.save_timing template=%s filename=%s engine=%s template_ms=%.2f render_ms=%.2f write_ms=%.2f total_ms=%.2f bytes=%s",
+        template_path,
+        filename,
+        used_engine,
+        template_ms,
+        render_ms,
+        write_ms,
+        (perf_counter() - started) * 1000,
+        len(pdf_bytes),
+    )
 
     return file_path, used_engine

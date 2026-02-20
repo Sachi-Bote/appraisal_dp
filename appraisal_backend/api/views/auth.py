@@ -1,4 +1,6 @@
 import os
+import logging
+from time import perf_counter
 
 from django.conf import settings
 from django.contrib.auth.password_validation import validate_password
@@ -18,6 +20,8 @@ from rest_framework.permissions import IsAuthenticated
 from api.serializers import RegisterSerializer
 from api.permissions import IsAdmin
 from core.models import User
+
+logger = logging.getLogger("api.performance")
 
 
 # =========================
@@ -52,16 +56,21 @@ class LoginSerializer(TokenObtainPairSerializer):
         return token
 
     def validate(self, attrs):
+        started = perf_counter()
+        db_auth_started = perf_counter()
         data = super().validate(attrs)
+        db_auth_ms = (perf_counter() - db_auth_started) * 1000
         user = self.user
 
         # Expose profile-relevant fields so frontend can map them immediately after login.
+        profile_started = perf_counter()
         date_of_joining = None
         faculty_profile = getattr(user, "facultyprofile", None)
         if faculty_profile and faculty_profile.date_of_joining:
             date_of_joining = faculty_profile.date_of_joining
         else:
             date_of_joining = user.date_joined
+        profile_ms = (perf_counter() - profile_started) * 1000
 
         data["user"] = {
             "id": user.id,
@@ -73,6 +82,15 @@ class LoginSerializer(TokenObtainPairSerializer):
             "date_joined": user.date_joined,
             "must_change_password": user.must_change_password,
         }
+        total_ms = (perf_counter() - started) * 1000
+        logger.info(
+            "auth.login_timing user_id=%s role=%s db_auth_ms=%.2f profile_build_ms=%.2f total_ms=%.2f",
+            getattr(user, "id", None),
+            getattr(user, "role", None),
+            db_auth_ms,
+            profile_ms,
+            total_ms,
+        )
         return data
 
 

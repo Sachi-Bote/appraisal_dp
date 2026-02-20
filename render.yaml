@@ -11,7 +11,7 @@ services:
     plan: free
     rootDir: appraisal_backend
     buildCommand: bash build.sh
-    startCommand: gunicorn appraisal_backend.wsgi:application --bind 0.0.0.0:$PORT --workers 3 --timeout 120
+    startCommand: gunicorn appraisal_backend.wsgi:application --bind 0.0.0.0:$PORT --workers ${WEB_CONCURRENCY:-4} --threads ${GUNICORN_THREADS:-4} --worker-class gthread --max-requests ${GUNICORN_MAX_REQUESTS:-1000} --max-requests-jitter ${GUNICORN_MAX_REQUESTS_JITTER:-100} --keep-alive ${GUNICORN_KEEPALIVE:-5} --timeout ${GUNICORN_TIMEOUT:-120}
     healthCheckPath: /admin/login/
     envVars:
       - key: DJANGO_DEBUG
@@ -42,6 +42,24 @@ services:
         fromDatabase:
           name: appraisal-postgres
           property: port
+      - key: DB_CONN_MAX_AGE
+        value: "120"
+      - key: DB_CONN_HEALTH_CHECKS
+        value: "True"
+      - key: DB_CONNECT_TIMEOUT
+        value: "10"
+      - key: WEB_CONCURRENCY
+        value: "4"
+      - key: GUNICORN_THREADS
+        value: "4"
+      - key: GUNICORN_MAX_REQUESTS
+        value: "1000"
+      - key: GUNICORN_MAX_REQUESTS_JITTER
+        value: "100"
+      - key: GUNICORN_KEEPALIVE
+        value: "5"
+      - key: GUNICORN_TIMEOUT
+        value: "120"
       - key: DJANGO_CORS_ALLOWED_ORIGINS
         sync: false
       - key: DJANGO_CSRF_TRUSTED_ORIGINS

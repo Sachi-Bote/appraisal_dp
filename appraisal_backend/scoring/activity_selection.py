@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from functools import lru_cache
 from typing import Any, Dict, List, Tuple
 
 
@@ -227,6 +228,7 @@ def normalize_activity_payload(payload: Dict[str, Any]) -> Dict[str, Any]:
     return payload
 
 
+@lru_cache(maxsize=1)
 def get_activity_sections() -> List[Dict[str, Any]]:
     return [
         {

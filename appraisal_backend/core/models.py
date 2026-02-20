@@ -246,6 +246,12 @@ class Appraisal(models.Model):
             'semester',
             'form_type',
         )
+        indexes = [
+            models.Index(fields=['faculty', 'updated_at']),
+            models.Index(fields=['faculty', 'status', 'updated_at']),
+            models.Index(fields=['faculty', 'is_hod_appraisal', 'updated_at']),
+            models.Index(fields=['status', 'updated_at']),
+        ]
 
     def __str__(self):
         return f"{self.academic_year} | {self.semester} | {self.form_type} | {self.faculty}"
@@ -412,6 +418,9 @@ class GeneratedPDF(models.Model):
 
     class Meta:
         db_table = 'generated_pdfs'
+        indexes = [
+            models.Index(fields=['appraisal', 'generated_at']),
+        ]
 
     def __str__(self):
         return f"PDF | {self.appraisal}"

@@ -76,6 +76,8 @@ MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
+    'django.middleware.gzip.GZipMiddleware',
+    'api.middleware.APIPerformanceLoggingMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -116,6 +118,11 @@ DATABASES = {
         'PASSWORD': os.getenv("DB_PASSWORD", "admin123"),
         'HOST': os.getenv("DB_HOST", "localhost"),
         'PORT': os.getenv("DB_PORT", "5432"),
+        'CONN_MAX_AGE': int(os.getenv("DB_CONN_MAX_AGE", "120")),
+        'CONN_HEALTH_CHECKS': env_bool("DB_CONN_HEALTH_CHECKS", True),
+        'OPTIONS': {
+            'connect_timeout': int(os.getenv("DB_CONNECT_TIMEOUT", "10")),
+        },
     }
 }
 
@@ -258,3 +265,26 @@ SECURE_SSL_REDIRECT = env_bool("DJANGO_SECURE_SSL_REDIRECT", not DEBUG)
 SECURE_HSTS_SECONDS = int(os.getenv("DJANGO_SECURE_HSTS_SECONDS", "0" if DEBUG else "31536000"))
 SECURE_HSTS_INCLUDE_SUBDOMAINS = env_bool("DJANGO_SECURE_HSTS_INCLUDE_SUBDOMAINS", not DEBUG)
 SECURE_HSTS_PRELOAD = env_bool("DJANGO_SECURE_HSTS_PRELOAD", False)
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "standard": {
+            "format": "%(asctime)s %(levelname)s %(name)s %(message)s",
+        },
+    },
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "standard",
+        },
+    },
+    "loggers": {
+        "api.performance": {
+            "handlers": ["console"],
+            "level": os.getenv("PERF_LOG_LEVEL", "WARNING"),
+            "propagate": False,
+        },
+    },
+}

@@ -1,4 +1,6 @@
 from datetime import date
+import logging
+from time import perf_counter
 
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.authentication import JWTAuthentication
@@ -8,6 +10,8 @@ from rest_framework.parsers import JSONParser, MultiPartParser, FormParser
 
 
 from core.models import FacultyProfile, HODProfile, PrincipalProfile
+
+logger = logging.getLogger("api.performance")
 
 
 def _parse_optional_date(value):
@@ -27,8 +31,10 @@ class MeView(APIView):
     parser_classes = [JSONParser, MultiPartParser, FormParser]
 
     def get(self, request):
+        started = perf_counter()
         user = request.user
 
+        profile_lookup_started = perf_counter()
         profile_data = {
             "full_name": user.full_name,
             "designation": user.designation,
@@ -76,8 +82,10 @@ class MeView(APIView):
                     "email": profile.email or user.email or user.username,
                     "mobile_number": profile.mobile or user.mobile_number,
                 }
+        profile_lookup_ms = (perf_counter() - profile_lookup_started) * 1000
 
-        return Response({
+        payload_started = perf_counter()
+        payload = {
             "id": user.id,
             "username": user.username,
             "email": user.email or user.username,
@@ -93,7 +101,17 @@ class MeView(APIView):
             "assessment_period": user.assessment_period,
 
             **profile_data
-        })
+        }
+        payload_ms = (perf_counter() - payload_started) * 1000
+        logger.info(
+            "auth.me_timing user_id=%s role=%s profile_lookup_ms=%.2f payload_ms=%.2f total_ms=%.2f",
+            getattr(user, "id", None),
+            getattr(user, "role", None),
+            profile_lookup_ms,
+            payload_ms,
+            (perf_counter() - started) * 1000,
+        )
+        return Response(payload)
     
     def patch(self, request):
         user = request.user
