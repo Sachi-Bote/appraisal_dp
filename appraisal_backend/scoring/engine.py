@@ -88,7 +88,6 @@ def calculate_full_score(payload: dict) -> dict:
     + Decimal(str(pbas_departmental_result["total_awarded"]))
     + Decimal(str(pbas_institute_result["total_awarded"]))
     + Decimal(str(pbas_society_result["total_awarded"]))
-    + Decimal(str(research_result["total"]))
     + Decimal(str(pbas_result["total"]))
     + Decimal(str(acr_result["credit_point"]))
 )

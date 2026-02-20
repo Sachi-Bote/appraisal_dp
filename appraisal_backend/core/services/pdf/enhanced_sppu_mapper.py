@@ -187,6 +187,21 @@ def get_enhanced_sppu_pdf_data(appraisal: Appraisal) -> Dict:
     }
     
     # Map research entries to Table 2 categories
+    explicit_type_map = {
+        "mooc_complete_4_quadrant": "moocs_4quadrant",
+        "mooc_per_module": "moocs_single_lecture",
+        "mooc_content_writer": "moocs_content_writer",
+        "mooc_course_coordinator": "moocs_coordinator",
+        "econtent_complete_course": "econtent_4quadrant_complete",
+        "econtent_4quadrant_per_module": "econtent_4quadrant_per_module",
+        "econtent_module_contribution": "econtent_module_contribution",
+        "econtent_editor": "econtent_editor",
+        "innovative_pedagogy_development": "pedagogy_development",
+        "pedagogy_development": "pedagogy_development",
+        "new_curriculum": "curriculum_design",
+        "curriculum_design": "curriculum_design",
+    }
+
     for entry in research_entries:
         if not isinstance(entry, dict):
             continue
@@ -198,6 +213,11 @@ def get_enhanced_sppu_pdf_data(appraisal: Appraisal) -> Dict:
         except (TypeError, ValueError):
             count = 0
         if count <= 0:
+            continue
+
+        mapped_key = explicit_type_map.get(entry_type)
+        if mapped_key:
+            table2_categories[mapped_key]["count"] += count
             continue
         
         # Category 1: Research Papers (handle various journal naming patterns)

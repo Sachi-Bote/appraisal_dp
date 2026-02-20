@@ -259,6 +259,11 @@ class AppraisalDetailAPI(APIView):
             appraisal.appraisal_data,
             appraisal.is_hod_appraisal is True,
         )
+        review_key = "principal_review" if appraisal.is_hod_appraisal is True else "hod_review"
+        review_data = appraisal.appraisal_data.get(review_key, {}) if isinstance(appraisal.appraisal_data, dict) else {}
+        if not isinstance(review_data, dict):
+            review_data = {}
+        verification_saved_at = review_data.get("verification_saved_at")
         verified_ms = (perf_counter() - verified_started) * 1000
         # Provide pre-computed total score from DB by default to avoid expensive recalculation on routine page loads.
         score_started = perf_counter()
@@ -315,6 +320,8 @@ class AppraisalDetailAPI(APIView):
             "verifier_role": verifier_role,
             "verified_grade_options": ["Good", "Satisfactory", "Not Satisfactory"],
             "table2_verified_keys": TABLE2_VERIFIED_KEYS,
+            "verification_saved_at": verification_saved_at,
+            "verification_saved": bool(verification_saved_at),
             "activity_sections": get_activity_sections(),
             "faculty": {
                 "name": appraisal.faculty.full_name,

@@ -160,6 +160,7 @@ class ForgotPasswordRequestAPI(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
+        started = perf_counter()
         email = (request.data.get("email") or "").strip()
         if not email:
             return Response(
@@ -183,13 +184,28 @@ class ForgotPasswordRequestAPI(APIView):
             )
             reset_link = f"{frontend_base_url.rstrip('/')}/reset-password?uid={uid}&token={token}"
 
-            send_mail(
-                subject="Password reset request",
-                message=f"Use this link to reset your password: {reset_link}",
-                from_email=getattr(settings, "DEFAULT_FROM_EMAIL", None),
-                recipient_list=[user.email or user.username],
-                fail_silently=getattr(settings, "PASSWORD_RESET_EMAIL_FAIL_SILENTLY", settings.DEBUG),
-            )
+            mail_started = perf_counter()
+            try:
+                send_mail(
+                    subject="Password reset request",
+                    message=f"Use this link to reset your password: {reset_link}",
+                    from_email=getattr(settings, "DEFAULT_FROM_EMAIL", None),
+                    recipient_list=[user.email or user.username],
+                    fail_silently=False,
+                )
+                logger.info(
+                    "auth.forgot_password_timing user_id=%s mail_sent=true mail_ms=%.2f total_ms=%.2f",
+                    user.id,
+                    (perf_counter() - mail_started) * 1000,
+                    (perf_counter() - started) * 1000,
+                )
+            except Exception:
+                # Always return generic success to prevent account enumeration and UI hangs.
+                logger.exception(
+                    "auth.forgot_password_timing user_id=%s mail_sent=false total_ms=%.2f",
+                    user.id,
+                    (perf_counter() - started) * 1000,
+                )
 
             if settings.DEBUG:
                 debug_payload = {
@@ -204,6 +220,12 @@ class ForgotPasswordRequestAPI(APIView):
         if debug_payload:
             response["debug"] = debug_payload
 
+        logger.info(
+            "auth.forgot_password_timing user_id=%s user_found=%s total_ms=%.2f",
+            getattr(user, "id", None),
+            bool(user and user.is_active),
+            (perf_counter() - started) * 1000,
+        )
         return Response(response, status=status.HTTP_200_OK)
 
 

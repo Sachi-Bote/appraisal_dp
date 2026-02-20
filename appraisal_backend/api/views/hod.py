@@ -10,6 +10,7 @@ from workflow.states import States
 from scoring.engine import calculate_full_score
 from validation.master_validator import validate_full_form
 from django.db import transaction
+from django.utils import timezone
 from api.serializers import AppraisalSerializer
 from core.models import FacultyProfile, Appraisal, AppraisalScore, User, HODProfile
 from core.utils.audit import log_action
@@ -477,13 +478,6 @@ class HODVerifyGradeAPI(APIView):
     permission_classes = [IsAuthenticated, IsHOD]
 
     def post(self, request, appraisal_id):
-        verified_grade = request.data.get("verified_grade")
-        if verified_grade not in ALLOWED_VERIFIED_GRADES:
-            return Response(
-                {"error": "verified_grade must be one of: Good, Satisfactory, Not Satisfactory"},
-                status=400
-            )
-
         try:
             appraisal = Appraisal.objects.select_related("faculty__department").get(appraisal_id=appraisal_id)
         except Appraisal.DoesNotExist:
@@ -515,17 +509,44 @@ class HODVerifyGradeAPI(APIView):
             )
 
         appraisal_data = appraisal.appraisal_data if isinstance(appraisal.appraisal_data, dict) else {}
-        appraisal_data, grading = merge_verified_grading(
-            appraisal_data,
-            False,
-            {"table1_verified_teaching": verified_grade, "table1_verified_activities": verified_grade}
-        )
+        payload = request.data if isinstance(request.data, dict) else {}
+        legacy_grade = payload.get("verified_grade")
+        if legacy_grade and legacy_grade not in ALLOWED_VERIFIED_GRADES:
+            return Response(
+                {"error": "verified_grade must be one of: Good, Satisfactory, Not Satisfactory"},
+                status=400
+            )
+
+        appraisal_data, grading = merge_verified_grading(appraisal_data, False, payload)
+        table1_teaching = grading.get("table1_verified_teaching")
+        table1_activities = grading.get("table1_verified_activities")
+        if not table1_teaching or not table1_activities:
+            return Response(
+                {"error": "Both table1_verified_teaching and table1_verified_activities are required"},
+                status=400
+            )
+
+        hod_review = appraisal_data.get("hod_review", {})
+        if not isinstance(hod_review, dict):
+            hod_review = {}
+        if "hod_comments_table1" in payload:
+            hod_review["comments_table1"] = payload.get("hod_comments_table1") or ""
+        if "hod_comments_table2" in payload:
+            hod_review["comments_table2"] = payload.get("hod_comments_table2") or ""
+        if "hod_remarks" in payload:
+            hod_review["remarks_suggestions"] = payload.get("hod_remarks") or ""
+        if "hod_justification_not_satisfactory" in payload:
+            hod_review["justification"] = payload.get("hod_justification_not_satisfactory") or ""
+        saved_at = timezone.now().isoformat()
+        hod_review["verification_saved_at"] = saved_at
+        hod_review["verification_saved_by"] = request.user.id
+        appraisal_data["hod_review"] = hod_review
         appraisal.appraisal_data = appraisal_data
         appraisal.save(update_fields=["appraisal_data"])
 
         overall_verified_grade = derive_overall_grade(
-            grading.get("table1_verified_teaching"),
-            grading.get("table1_verified_activities"),
+            table1_teaching,
+            table1_activities,
         )
 
         # Recalculate scores so the frontend "verified score" field can be auto-filled while HOD is reviewing.
@@ -556,10 +577,13 @@ class HODVerifyGradeAPI(APIView):
 
         return Response(
             {
-                "message": "Verified grade updated by HOD",
+                "message": "Verified grading saved by HOD",
+                "saved": True,
+                "saved_at": saved_at,
                 "verified_grade": overall_verified_grade,
-                "table1_verified_teaching": grading.get("table1_verified_teaching", ""),
-                "table1_verified_activities": grading.get("table1_verified_activities", ""),
+                "table1_verified_teaching": table1_teaching,
+                "table1_verified_activities": table1_activities,
+                "table2_verified_scores": grading.get("table2_verified_scores", {}),
                 "total_score": score_result.get("total_score") if score_result else None,
             },
             status=200

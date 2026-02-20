@@ -75,6 +75,25 @@ def _clean_promotion_due_text(value) -> str:
     return combined or text
 
 
+def _format_date_ddmmyyyy(value) -> str:
+    text = str(value or "").strip()
+    if not text:
+        return ""
+    match = re.match(r"^(\d{4})-(\d{2})-(\d{2})$", text)
+    if match:
+        return f"{match.group(3)}-{match.group(2)}-{match.group(1)}"
+    return text
+
+
+def _format_embedded_dates_ddmmyyyy(text) -> str:
+    raw = str(text or "")
+    return re.sub(
+        r"(\d{4})-(\d{2})-(\d{2})",
+        lambda m: f"{m.group(3)}-{m.group(2)}-{m.group(1)}",
+        raw,
+    )
+
+
 def get_enhanced_pbas_pdf_data(appraisal: Appraisal) -> Dict:
     """
     Extract all data for enhanced AICTE PBAS PDF generation with complete fields.
@@ -227,15 +246,15 @@ def get_enhanced_pbas_pdf_data(appraisal: Appraisal) -> Dict:
         "faculty_ext": {
             "name": _get_first(general, ["faculty_name", "name"], base["faculty"]["name"]),
             "designation": _get_first(general, ["designation"], base["faculty"]["designation"]),
-            "date_of_joining": _get_first(general, ["date_of_joining", "joining_date", "date_joining"], ""),
+            "date_of_joining": _format_date_ddmmyyyy(_get_first(general, ["date_of_joining", "joining_date", "date_joining"], "")),
             "department_center": _get_first(general, ["department", "department_centre", "department_center"], base["faculty"]["department"]),
             "communication_address": _get_first(general, ["communication_address", "address"], ""),
             "email_mobile": f'{_get_first(general, ["email"], base["faculty"]["email"])} / {_get_first(general, ["mobile", "phone"], base["faculty"]["mobile"])}',
             "present_designation_grade_pay": _get_first(general, ["present_designation_grade_pay", "grade_pay", "gradePay"], ""),
-            "promotion_designation_due_date": _clean_promotion_due_text(
+            "promotion_designation_due_date": _format_embedded_dates_ddmmyyyy(_clean_promotion_due_text(
                 _get_first(general, ["promotion_designation_due_date", "promotion_designation", "promotion_due_date"], "")
-            ),
-            "assessment_period": _get_first(general, ["assessment_period"], base.get("period", "")),
+            )),
+            "assessment_period": _format_embedded_dates_ddmmyyyy(_get_first(general, ["assessment_period"], base.get("period", ""))),
         },
         "teaching": {
             "courses": normalized_teaching,
