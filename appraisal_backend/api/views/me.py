@@ -25,6 +25,17 @@ def _parse_optional_date(value):
         return None
 
 
+def _build_media_url(request, image_field):
+    if not image_field:
+        return None
+    url = getattr(image_field, "url", "") or ""
+    if not url:
+        return None
+    if url.startswith("http://") or url.startswith("https://"):
+        return url
+    return request.build_absolute_uri(url)
+
+
 class MeView(APIView):
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
@@ -35,6 +46,7 @@ class MeView(APIView):
         user = request.user
 
         profile_lookup_started = perf_counter()
+        assessment_period = user.assessment_period or date(date.today().year, 1, 1)
         profile_data = {
             "full_name": user.full_name,
             "designation": user.designation,
@@ -47,7 +59,7 @@ class MeView(APIView):
             profile = FacultyProfile.objects.filter(user=user).first()
             if profile:
                 date_of_joining = profile.date_of_joining or user.date_joined
-                profile_image = request.build_absolute_uri(profile.profile_image.url) if profile.profile_image else None
+                profile_image = _build_media_url(request, profile.profile_image)
                 profile_data = {
                     "full_name": profile.full_name or user.full_name,
                     "designation": profile.designation or user.designation,
@@ -64,7 +76,7 @@ class MeView(APIView):
                     (faculty_profile.date_of_joining if faculty_profile else None)
                     or user.date_joined
                 )
-                profile_image = request.build_absolute_uri(profile.profile_image.url) if profile.profile_image else None
+                profile_image = _build_media_url(request, profile.profile_image)
                 profile_data = {
                     "full_name": profile.full_name or user.full_name,
                     "designation": user.designation or "HOD",
@@ -98,7 +110,7 @@ class MeView(APIView):
             "gradePay": user.gradePay,
             "promotion_designation": user.promotion_designation,
             "eligibility_date": user.eligibility_date,
-            "assessment_period": user.assessment_period,
+            "assessment_period": assessment_period,
 
             **profile_data
         }
