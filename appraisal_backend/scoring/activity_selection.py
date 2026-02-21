@@ -238,6 +238,7 @@ def _normalize_selected_entry(item: Any) -> Dict[str, Any] | None:
     scope = ""
     semester = ""
     enclosure_no = ""
+    criteria = ""
     credits_claimed = 0.0
 
     if isinstance(item, dict):
@@ -251,8 +252,14 @@ def _normalize_selected_entry(item: Any) -> Dict[str, Any] | None:
         )
         scope = str(item.get("scope") or item.get("pbas_scope") or "").strip().lower()
         semester = str(item.get("semester") or item.get("term") or "").strip()
-        enclosure_no = str(item.get("enclosure_no") or item.get("enclosure") or "").strip()
-        raw_credits = item.get("credits_claimed", item.get("credit_point", 0))
+        enclosure_no = str(
+            item.get("enclosure_no")
+            or item.get("enclosureNo")
+            or item.get("enclosure")
+            or ""
+        ).strip()
+        criteria = str(item.get("criteria") or item.get("remarks") or "").strip()
+        raw_credits = item.get("credits_claimed", item.get("credit", item.get("credit_point", 0)))
         try:
             credits_claimed = float(raw_credits or 0)
         except (TypeError, ValueError):
@@ -299,6 +306,7 @@ def _normalize_selected_entry(item: Any) -> Dict[str, Any] | None:
         "scope": scope,
         "semester": semester,
         "enclosure_no": enclosure_no,
+        "criteria": criteria,
         "credits_claimed": credits_claimed,
     }
 
@@ -374,6 +382,7 @@ def _derive_pbas_activities_from_selection(activities_payload: Dict[str, Any]) -
             "semester": normalized["semester"],
             "credits_claimed": normalized["credits_claimed"],
             "enclosure_no": normalized["enclosure_no"],
+            "criteria": normalized["criteria"],
             "mapped_from_section": normalized["section_key"],
             "mapped_scope": normalized["scope"],
         }
