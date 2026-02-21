@@ -10,84 +10,130 @@ PBAS_SCOPE_SOCIETY = "society"
 
 
 ACTIVITY_SECTIONS: List[Dict[str, Any]] = [
+    # (a) Administrative Responsibilities
     {
         "section_key": "a_administrative",
         "label": "Administrative responsibilities (HOD / Dean / Coordinator etc.)",
         "legacy_flag": "administrative_responsibility",
         "activities": [
+            # Departmental
             {"label": "Lab In charge", "scope": PBAS_SCOPE_DEPARTMENTAL},
-            {"label": "Departmental Library in charge", "scope": PBAS_SCOPE_DEPARTMENTAL},
+            {"label": "Time table In charge", "scope": PBAS_SCOPE_DEPARTMENTAL},
+            {"label": "Class Teacher", "scope": PBAS_SCOPE_DEPARTMENTAL},
+            {"label": "Student registration In charge", "scope": PBAS_SCOPE_DEPARTMENTAL},
+            {"label": "Student detention In charge", "scope": PBAS_SCOPE_DEPARTMENTAL},
             {"label": "Cleanliness in charge", "scope": PBAS_SCOPE_DEPARTMENTAL},
             {"label": "Departmental store/Purchase in-charge", "scope": PBAS_SCOPE_DEPARTMENTAL},
-            {"label": "Student Feedback in charge", "scope": PBAS_SCOPE_DEPARTMENTAL},
-            {"label": "In-charge/Member of AICTE/State Govt./University statutory committee", "scope": PBAS_SCOPE_INSTITUTE},
-            {"label": "NBA/NACC coordinator", "scope": PBAS_SCOPE_INSTITUTE},
+            {"label": "Student Feedback In charge", "scope": PBAS_SCOPE_DEPARTMENTAL},
+            {"label": "Departmental Library in charge", "scope": PBAS_SCOPE_DEPARTMENTAL},
+
+            # Institute
+            {"label": "NBA coordinator", "scope": PBAS_SCOPE_INSTITUTE},
+            {"label": "Internal/External Academic Monitoring Co-coordinator", "scope": PBAS_SCOPE_INSTITUTE},
+            {"label": "In-charge Internship", "scope": PBAS_SCOPE_INSTITUTE},
+            {"label": "Institute Web site Management", "scope": PBAS_SCOPE_INSTITUTE},
+            {"label": "Institute level networking and maintenance", "scope": PBAS_SCOPE_INSTITUTE},
+            {"label": "Building/Electrical Maintenance", "scope": PBAS_SCOPE_INSTITUTE},
+            {"label": "EPBX Activity", "scope": PBAS_SCOPE_INSTITUTE},
+            {"label": "Hardware and Software installation and maintenance", "scope": PBAS_SCOPE_INSTITUTE},
+            {"label": "Institute MIS In charge", "scope": PBAS_SCOPE_INSTITUTE},
+            {"label": "DTE MIS In charge", "scope": PBAS_SCOPE_INSTITUTE},
+            {"label": "RO/RBTE/Administrative Activity/Duties", "scope": PBAS_SCOPE_INSTITUTE},
+            {"label": "In-charge/Member of AICTE/State Govt./University Statutory Committee", "scope": PBAS_SCOPE_INSTITUTE},
+            {"label": "NBA/NAAC coordinator", "scope": PBAS_SCOPE_INSTITUTE},
+            {"label": "AICTE/University/DTE/AISHE/NIRF/ARIIA/RUSA/TEQIP/PCI/COA etc Activity in-charge", "scope": PBAS_SCOPE_INSTITUTE},
+            {"label": "HoD/Dean/Associate Dean/Library In-charge", "scope": PBAS_SCOPE_INSTITUTE},
             {"label": "Rector/Warden/Canteen", "scope": PBAS_SCOPE_INSTITUTE},
-            {"label": "Scholarship in-charge", "scope": PBAS_SCOPE_INSTITUTE},
+            {"label": "Earn and Learn Scheme/Scholarship In-charge", "scope": PBAS_SCOPE_INSTITUTE},
+
             {"label": "Any other administrative activity", "scope": PBAS_SCOPE_INSTITUTE},
         ],
     },
+
+    # (b) Examination & Evaluation Duties
     {
         "section_key": "b_exam_duties",
         "label": "Examination & evaluation duties",
         "legacy_flag": "exam_duties",
         "activities": [
-            {"label": "Practical/Exam timetable in charge", "scope": PBAS_SCOPE_DEPARTMENTAL},
-            {"label": "Internal/External academic monitoring coordinator", "scope": PBAS_SCOPE_INSTITUTE},
-            {"label": "Exam activities/duties", "scope": PBAS_SCOPE_INSTITUTE},
+            {"label": "Practical/Exam Time table in charge", "scope": PBAS_SCOPE_DEPARTMENTAL},
+            {"label": "Exam Activities/Duties", "scope": PBAS_SCOPE_INSTITUTE},
+            {"label": "Internal/External Academic Monitoring Co-coordinator", "scope": PBAS_SCOPE_INSTITUTE},
             {"label": "Any other examination/evaluation duty", "scope": PBAS_SCOPE_INSTITUTE},
         ],
     },
+
+    # (c) Student Related Activities
     {
         "section_key": "c_student_related",
         "label": "Student related co-curricular / extension activities",
         "legacy_flag": "student_related",
         "activities": [
-            {"label": "Student Association (Chapter co-coordinator)", "scope": PBAS_SCOPE_DEPARTMENTAL},
-            {"label": "Project mentoring for project competition", "scope": PBAS_SCOPE_DEPARTMENTAL},
-            {"label": "Student counseling", "scope": PBAS_SCOPE_DEPARTMENTAL},
-            {"label": "Sports in charge and co-coordinator", "scope": PBAS_SCOPE_INSTITUTE},
+            {"label": "Student Association/Chapter Co-coordinator", "scope": PBAS_SCOPE_DEPARTMENTAL},
+            {"label": "Student Counseling", "scope": PBAS_SCOPE_DEPARTMENTAL},
+            {"label": "Project Mentoring for project Competition", "scope": PBAS_SCOPE_DEPARTMENTAL},
+            {"label": "Industrial visit In charge", "scope": PBAS_SCOPE_DEPARTMENTAL},
+            {"label": "Final Year Student Project Guide", "scope": PBAS_SCOPE_DEPARTMENTAL},
+
+            {"label": "Sports in charge and co-ordinator", "scope": PBAS_SCOPE_INSTITUTE},
             {"label": "PRO/Gymkhana/Gathering/Publicity/student club activity", "scope": PBAS_SCOPE_INSTITUTE},
+            {"label": "Garden Maintenance/Tree Plantation", "scope": PBAS_SCOPE_INSTITUTE},
+
             {"label": "Blood donation activity organization", "scope": PBAS_SCOPE_SOCIETY},
-            {"label": "Yoga classes", "scope": PBAS_SCOPE_SOCIETY},
-            {"label": "Medical camp/health camp organization", "scope": PBAS_SCOPE_SOCIETY},
-            {"label": "Literacy camp organization", "scope": PBAS_SCOPE_SOCIETY},
+            {"label": "Yoga Classes", "scope": PBAS_SCOPE_SOCIETY},
+            {"label": "Medical Camp/Health Camp Organization", "scope": PBAS_SCOPE_SOCIETY},
+            {"label": "Literacy Camp Organization", "scope": PBAS_SCOPE_SOCIETY},
             {"label": "Environmental awareness camp", "scope": PBAS_SCOPE_SOCIETY},
-            {"label": "Swachh Bharat mission / NCC / NSS activity", "scope": PBAS_SCOPE_SOCIETY},
+            {"label": "Swachh Bharat Mission/NCC/NSS activity", "scope": PBAS_SCOPE_SOCIETY},
+            {"label": "Tree Plantation and Garden Maintenance", "scope": PBAS_SCOPE_SOCIETY},
+
             {"label": "Any other student-related activity", "scope": PBAS_SCOPE_SOCIETY},
         ],
     },
+
+    # (d) Organizing Events
     {
         "section_key": "d_organizing_events",
         "label": "Organizing seminars / workshops / conferences",
         "legacy_flag": "organizing_events",
         "activities": [
-            {"label": "Initiative for CEP/STTP/testing consultancy", "scope": PBAS_SCOPE_INSTITUTE},
-            {"label": "Organization of MOOCS/NPTEL/spoken tutorials/webinars", "scope": PBAS_SCOPE_INSTITUTE},
+            {"label": "Guest Lecture Organization", "scope": PBAS_SCOPE_INSTITUTE},
+            {"label": "Project/Seminar Coordinator", "scope": PBAS_SCOPE_INSTITUTE},
+            {"label": "Initiative for CEP/STTP/Testing Consultancy", "scope": PBAS_SCOPE_INSTITUTE},
+            {"label": "Organization of MOOCS/NPTEL/Spoken Tutorials/IUCEE webinars", "scope": PBAS_SCOPE_INSTITUTE},
             {"label": "Organization of FDP/Conference/Training/Workshop", "scope": PBAS_SCOPE_INSTITUTE},
-            {"label": "Induction program in charge", "scope": PBAS_SCOPE_INSTITUTE},
+            {"label": "Induction Program In charge", "scope": PBAS_SCOPE_INSTITUTE},
             {"label": "Any other event organization activity", "scope": PBAS_SCOPE_INSTITUTE},
         ],
     },
+
+    # (e) PhD Guidance
     {
         "section_key": "e_phd_guidance",
         "label": "Guiding PhD students",
         "legacy_flag": "phd_guidance",
         "activities": [
-            {"label": "Evidence of activity involved in guiding PhD students", "scope": PBAS_SCOPE_DEPARTMENTAL},
+            {"label": "PhD Supervisor", "scope": PBAS_SCOPE_DEPARTMENTAL},
+            {"label": "PhD Co-Supervisor", "scope": PBAS_SCOPE_DEPARTMENTAL},
+            {"label": "PhD Progress Committee Member", "scope": PBAS_SCOPE_DEPARTMENTAL},
             {"label": "Any other PhD guidance activity", "scope": PBAS_SCOPE_DEPARTMENTAL},
         ],
     },
+
+    # (f) Research Projects
     {
         "section_key": "f_research_project",
         "label": "Conducting minor / major research projects",
         "legacy_flag": "research_project",
         "activities": [
+            {"label": "Consultancy (Research based)", "scope": PBAS_SCOPE_INSTITUTE},
             {"label": "Conducting minor research project", "scope": PBAS_SCOPE_INSTITUTE},
             {"label": "Conducting major research project", "scope": PBAS_SCOPE_INSTITUTE},
             {"label": "Any other research project activity", "scope": PBAS_SCOPE_INSTITUTE},
         ],
     },
+
+    # (g) Sponsored Projects
     {
         "section_key": "g_sponsored_project",
         "label": "Sponsored projects (national/international agencies)",
@@ -95,6 +141,7 @@ ACTIVITY_SECTIONS: List[Dict[str, Any]] = [
         "activities": [
             {"label": "Sponsored project funded by national agency", "scope": PBAS_SCOPE_INSTITUTE},
             {"label": "Sponsored project funded by international agency", "scope": PBAS_SCOPE_SOCIETY},
+            {"label": "Government Sponsored CSR Activities", "scope": PBAS_SCOPE_SOCIETY},
             {"label": "Any other sponsored project activity", "scope": PBAS_SCOPE_SOCIETY},
         ],
     },
@@ -172,13 +219,16 @@ def _build_activity_lookup() -> Dict[str, Dict[str, Any]]:
 ACTIVITY_LOOKUP = _build_activity_lookup()
 
 ACTIVITY_NAME_ALIASES = {
-    _normalize_text("Lab In charge"): _normalize_text("Departmental Library in charge"),
     _normalize_text("Departmental Library In charge"): _normalize_text("Departmental Library in charge"),
     _normalize_text("Departmental store / Purchase in charge"): _normalize_text("Departmental store/Purchase in-charge"),
-    _normalize_text("Practical / Exam Time table in charge"): _normalize_text("Practical/Exam timetable in charge"),
-    _normalize_text("Internal / External Academic Monitoring Co-coordinator"): _normalize_text("Internal/External academic monitoring coordinator"),
-    _normalize_text("Student Feedback In charge"): _normalize_text("Student Feedback in charge"),
+    _normalize_text("Practical / Exam Time table in charge"): _normalize_text("Practical/Exam Time table in charge"),
+    _normalize_text("Practical/Exam timetable in charge"): _normalize_text("Practical/Exam Time table in charge"),
+    _normalize_text("Internal / External Academic Monitoring Co-coordinator"): _normalize_text("Internal/External Academic Monitoring Co-coordinator"),
+    _normalize_text("Internal/External academic monitoring coordinator"): _normalize_text("Internal/External Academic Monitoring Co-coordinator"),
+    _normalize_text("Student Feedback in charge"): _normalize_text("Student Feedback In charge"),
     _normalize_text("Blood Donation Activity organization"): _normalize_text("Blood donation activity organization"),
+    _normalize_text("Sports in charge and co-coordinator"): _normalize_text("Sports in charge and co-ordinator"),
+    _normalize_text("Student Association (Chapter co-coordinator)"): _normalize_text("Student Association/Chapter Co-coordinator"),
     _normalize_text("Organization of FDP / Conference / Training / Workshop"): _normalize_text("Organization of FDP/Conference/Training/Workshop"),
 }
 
