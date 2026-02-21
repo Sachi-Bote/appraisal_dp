@@ -15,6 +15,7 @@ ACTIVITY_SECTIONS: List[Dict[str, Any]] = [
         "label": "Administrative responsibilities (HOD / Dean / Coordinator etc.)",
         "legacy_flag": "administrative_responsibility",
         "activities": [
+            {"label": "Lab In charge", "scope": PBAS_SCOPE_DEPARTMENTAL},
             {"label": "Departmental Library in charge", "scope": PBAS_SCOPE_DEPARTMENTAL},
             {"label": "Cleanliness in charge", "scope": PBAS_SCOPE_DEPARTMENTAL},
             {"label": "Departmental store/Purchase in-charge", "scope": PBAS_SCOPE_DEPARTMENTAL},
@@ -170,6 +171,17 @@ def _build_activity_lookup() -> Dict[str, Dict[str, Any]]:
 
 ACTIVITY_LOOKUP = _build_activity_lookup()
 
+ACTIVITY_NAME_ALIASES = {
+    _normalize_text("Lab In charge"): _normalize_text("Departmental Library in charge"),
+    _normalize_text("Departmental Library In charge"): _normalize_text("Departmental Library in charge"),
+    _normalize_text("Departmental store / Purchase in charge"): _normalize_text("Departmental store/Purchase in-charge"),
+    _normalize_text("Practical / Exam Time table in charge"): _normalize_text("Practical/Exam timetable in charge"),
+    _normalize_text("Internal / External Academic Monitoring Co-coordinator"): _normalize_text("Internal/External academic monitoring coordinator"),
+    _normalize_text("Student Feedback In charge"): _normalize_text("Student Feedback in charge"),
+    _normalize_text("Blood Donation Activity organization"): _normalize_text("Blood donation activity organization"),
+    _normalize_text("Organization of FDP / Conference / Training / Workshop"): _normalize_text("Organization of FDP/Conference/Training/Workshop"),
+}
+
 
 def _to_bool(value: Any) -> bool:
     if isinstance(value, bool):
@@ -247,6 +259,7 @@ def _normalize_selected_entry(item: Any) -> Dict[str, Any] | None:
             credits_claimed = 0.0
     elif isinstance(item, str):
         normalized_text = _normalize_text(item)
+        normalized_text = ACTIVITY_NAME_ALIASES.get(normalized_text, normalized_text)
         lookup = ACTIVITY_LOOKUP.get(normalized_text)
         if lookup:
             section_key = lookup["section_key"]
@@ -256,7 +269,9 @@ def _normalize_selected_entry(item: Any) -> Dict[str, Any] | None:
         return None
 
     if activity_name:
-        lookup = ACTIVITY_LOOKUP.get(_normalize_text(activity_name))
+        normalized_activity_name = _normalize_text(activity_name)
+        normalized_activity_name = ACTIVITY_NAME_ALIASES.get(normalized_activity_name, normalized_activity_name)
+        lookup = ACTIVITY_LOOKUP.get(normalized_activity_name)
         if lookup:
             section_key = section_key or lookup["section_key"]
             scope = scope or lookup["scope"]
@@ -307,7 +322,9 @@ def derive_activity_flags(payload: Dict[str, Any]) -> Dict[str, bool]:
         elif isinstance(item, str):
             section_key = normalize_section_key(item)
             if not section_key:
-                lookup = ACTIVITY_LOOKUP.get(_normalize_text(item))
+                normalized_item = _normalize_text(item)
+                normalized_item = ACTIVITY_NAME_ALIASES.get(normalized_item, normalized_item)
+                lookup = ACTIVITY_LOOKUP.get(normalized_item)
                 if lookup:
                     section_key = lookup["section_key"]
 
@@ -430,7 +447,9 @@ def validate_activity_payload(payload: Dict[str, Any]) -> Tuple[bool, str]:
     selected = _extract_selection_list(payload)
     for idx, item in enumerate(selected, start=1):
         if isinstance(item, str):
-            if not normalize_section_key(item) and _normalize_text(item) not in ACTIVITY_LOOKUP:
+            normalized_item = _normalize_text(item)
+            normalized_item = ACTIVITY_NAME_ALIASES.get(normalized_item, normalized_item)
+            if not normalize_section_key(item) and normalized_item not in ACTIVITY_LOOKUP:
                 return False, f"Invalid section key in selected activity #{idx}"
             continue
         if not isinstance(item, dict):
