@@ -217,6 +217,17 @@ def _build_activity_lookup() -> Dict[str, Dict[str, Any]]:
 
 
 ACTIVITY_LOOKUP = _build_activity_lookup()
+SECTION_ACTIVITY_INDEX: Dict[str, Dict[str, Dict[str, Any]]] = {
+    section["section_key"]: {
+        _normalize_text(activity.get("label")): {
+            "label": activity.get("label"),
+            "scope": activity.get("scope", PBAS_SCOPE_INSTITUTE),
+        }
+        for activity in section.get("activities", [])
+        if str(activity.get("label", "")).strip()
+    }
+    for section in ACTIVITY_SECTIONS
+}
 
 ACTIVITY_NAME_ALIASES = {
     _normalize_text("Departmental Library In charge"): _normalize_text("Departmental Library in charge"),
@@ -330,8 +341,10 @@ def _normalize_selected_entry(item: Any) -> Dict[str, Any] | None:
         normalized_activity_name = ACTIVITY_NAME_ALIASES.get(normalized_activity_name, normalized_activity_name)
         lookup = ACTIVITY_LOOKUP.get(normalized_activity_name)
         if lookup:
-            section_key = section_key or lookup["section_key"]
-            scope = scope or lookup["scope"]
+            # Canonical activity definition wins over client-provided section/scope.
+            section_key = lookup["section_key"]
+            scope = lookup["scope"]
+            activity_name = lookup["activity_name"]
 
     scope_map = {
         "department": PBAS_SCOPE_DEPARTMENTAL,
@@ -451,6 +464,70 @@ def _derive_pbas_activities_from_selection(activities_payload: Dict[str, Any]) -
     }
 
 
+def _extract_activity_name_from_pbas_entry(entry: Dict[str, Any]) -> str:
+    for key in ("activity", "activity_name", "name", "title"):
+        val = entry.get(key)
+        if isinstance(val, str) and val.strip():
+            return val.strip()
+    return ""
+
+
+def _canonicalize_pbas_activity_buckets(pbas_payload: Dict[str, Any]) -> Dict[str, List[Dict[str, Any]]]:
+    bucket_key_to_scope = {
+        "departmental_activities": PBAS_SCOPE_DEPARTMENTAL,
+        "institute_activities": PBAS_SCOPE_INSTITUTE,
+        "society_activities": PBAS_SCOPE_SOCIETY,
+    }
+    canonical = {key: [] for key in bucket_key_to_scope}
+    seen_keys = {key: set() for key in bucket_key_to_scope}
+
+    for bucket_key, fallback_scope in bucket_key_to_scope.items():
+        rows = pbas_payload.get(bucket_key, [])
+        if not isinstance(rows, list):
+            continue
+        for row in rows:
+            if not isinstance(row, dict):
+                continue
+
+            activity_name = _extract_activity_name_from_pbas_entry(row)
+            normalized_activity_name = _normalize_text(activity_name)
+            normalized_activity_name = ACTIVITY_NAME_ALIASES.get(normalized_activity_name, normalized_activity_name)
+            lookup = ACTIVITY_LOOKUP.get(normalized_activity_name) if normalized_activity_name else None
+
+            mapped_scope = lookup["scope"] if lookup else fallback_scope
+            mapped_section_key = lookup["section_key"] if lookup else normalize_section_key(row.get("section_key"))
+            canonical_activity_name = lookup["activity_name"] if lookup else activity_name
+
+            mapped_bucket_key = (
+                "departmental_activities"
+                if mapped_scope == PBAS_SCOPE_DEPARTMENTAL
+                else "institute_activities"
+                if mapped_scope == PBAS_SCOPE_INSTITUTE
+                else "society_activities"
+            )
+
+            normalized_row = dict(row)
+            if canonical_activity_name:
+                normalized_row["activity"] = canonical_activity_name
+                normalized_row["activity_name"] = canonical_activity_name
+            if mapped_section_key:
+                normalized_row["section_key"] = mapped_section_key
+            normalized_row["mapped_scope"] = mapped_scope
+            normalized_row["mapped_from_bucket"] = bucket_key
+
+            dedupe_key = (
+                _normalize_text(normalized_row.get("activity_name") or normalized_row.get("activity")),
+                str(normalized_row.get("semester") or "").strip().lower(),
+                str(normalized_row.get("enclosure_no") or normalized_row.get("enclosure") or "").strip().lower(),
+            )
+            if dedupe_key in seen_keys[mapped_bucket_key]:
+                continue
+            seen_keys[mapped_bucket_key].add(dedupe_key)
+            canonical[mapped_bucket_key].append(normalized_row)
+
+    return canonical
+
+
 def normalize_appraisal_activity_mapping(payload: Dict[str, Any]) -> Dict[str, Any]:
     normalized_payload = dict(payload or {})
 
@@ -474,6 +551,16 @@ def normalize_appraisal_activity_mapping(payload: Dict[str, Any]) -> Dict[str, A
             "institute_count": len(derived["institute_activities"]),
             "society_count": len(derived["society_activities"]),
         }
+
+    canonical_buckets = _canonicalize_pbas_activity_buckets(pbas_payload)
+    pbas_payload["departmental_activities"] = canonical_buckets["departmental_activities"]
+    pbas_payload["institute_activities"] = canonical_buckets["institute_activities"]
+    pbas_payload["society_activities"] = canonical_buckets["society_activities"]
+    activities_payload["pbas_reclassified_counts"] = {
+        "departmental_count": len(canonical_buckets["departmental_activities"]),
+        "institute_count": len(canonical_buckets["institute_activities"]),
+        "society_count": len(canonical_buckets["society_activities"]),
+    }
 
     normalized_payload["pbas"] = pbas_payload
     return normalized_payload
@@ -522,5 +609,22 @@ def validate_activity_payload(payload: Dict[str, Any]) -> Tuple[bool, str]:
         )
         if not section_key:
             return False, f"Missing/invalid section for selected activity #{idx}"
+        activity_name = _extract_selected_activity_name(item)
+        if not activity_name:
+            return False, f"Missing activity name in selected activity #{idx}"
+        normalized_activity = _normalize_text(activity_name)
+        normalized_activity = ACTIVITY_NAME_ALIASES.get(normalized_activity, normalized_activity)
+        activity_lookup = ACTIVITY_LOOKUP.get(normalized_activity)
+        if activity_lookup:
+            if activity_lookup["section_key"] != section_key:
+                return False, f"Section/activity mismatch in selected activity #{idx}"
+        else:
+            # Allow custom activities only in explicit "Any other ..." rows in the chosen section.
+            has_any_other = any(
+                "any other" in key
+                for key in SECTION_ACTIVITY_INDEX.get(section_key, {}).keys()
+            )
+            if not has_any_other:
+                return False, f"Unknown activity in selected activity #{idx}"
 
     return True, ""
