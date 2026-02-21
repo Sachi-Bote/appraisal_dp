@@ -12,7 +12,7 @@ from workflow.states import States
 from core.models import FacultyProfile, Appraisal, AppraisalScore
 
 from core.utils.audit import log_action
-from scoring.activity_selection import normalize_activity_payload
+from scoring.activity_selection import normalize_appraisal_activity_mapping
 
 class FacultySubmitAPI(APIView):
     permission_classes = [IsAuthenticated, IsFaculty]
@@ -50,7 +50,7 @@ class FacultySubmitAPI(APIView):
                 status=400
             )
 
-        payload["activities"] = normalize_activity_payload(payload.get("activities", {}))
+        payload = normalize_appraisal_activity_mapping(payload)
 
        
         
@@ -214,7 +214,7 @@ class FacultyResubmitAPI(APIView):
 
         # update data
         data = request.data["appraisal_data"]
-        data["activities"] = normalize_activity_payload(data.get("activities", {}))
+        data = normalize_appraisal_activity_mapping(data)
         appraisal.appraisal_data = data
 
         submit_action = data.get("submit_action", "submit").lower()
