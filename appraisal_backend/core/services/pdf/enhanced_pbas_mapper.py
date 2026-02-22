@@ -240,6 +240,22 @@ def get_enhanced_pbas_pdf_data(appraisal: Appraisal) -> Dict:
     except Exception:
         pass
 
+    teaching_score = float(calculated_scores.get("teaching", {}).get("score", 0))
+    student_feedback_score = float(calculated_scores.get("student_feedback", {}).get("score", 0))
+    departmental_score = float(calculated_scores.get("departmental_activities", {}).get("total_awarded", 0))
+    institute_score = float(calculated_scores.get("institute_activities", {}).get("total_awarded", 0))
+    society_score = float(calculated_scores.get("society_activities", {}).get("total_awarded", 0))
+    acr_score_value = float(calculated_scores.get("acr", {}).get("credit_point", 0))
+    total_360_score = round(
+        teaching_score
+        + student_feedback_score
+        + departmental_score
+        + institute_score
+        + acr_score_value
+        + society_score,
+        2,
+    )
+
     return {
         "verified_grade": verified_grade,
         **base,
@@ -301,15 +317,16 @@ def get_enhanced_pbas_pdf_data(appraisal: Appraisal) -> Dict:
         },
         "scores": {
             "overall_grade": overall_grade,
-            "teaching_score": float(calculated_scores.get("teaching", {}).get("score", 0)),
+            "teaching_score": teaching_score,
             "activities_score": float(calculated_scores.get("activities", {}).get("score", 0)),
-            "student_feedback_score": float(calculated_scores.get("student_feedback", {}).get("score", 0)),
-            "departmental_score": float(calculated_scores.get("departmental_activities", {}).get("total_awarded", 0)),
-            "institute_score": float(calculated_scores.get("institute_activities", {}).get("total_awarded", 0)),
-            "society_score": float(calculated_scores.get("society_activities", {}).get("total_awarded", 0)),
+            "student_feedback_score": student_feedback_score,
+            "departmental_score": departmental_score,
+            "institute_score": institute_score,
+            "society_score": society_score,
             "research_score": float(calculated_scores.get("research", {}).get("total", 0)),
             "pbas_score": float(calculated_scores.get("pbas", {}).get("total", 0)),
-            "acr_score": float(calculated_scores.get("acr", {}).get("credit_point", 0)),
+            "acr_score": acr_score_value,
+            "total_360_score": total_360_score,
             "total_score": float(calculated_scores.get("total_score", 0)),
         },
         "academic_year": raw.get("academic_year", ""),

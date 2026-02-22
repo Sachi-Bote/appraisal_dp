@@ -70,63 +70,22 @@
             page-break-inside: avoid;
         }
 
-        .sign-row {
-            width: 100%;
-            margin-top: 10px;
+        .principal-remark-title {
+            margin-top: 18px;
+            font-size: 12px;
+            font-weight: bold;
         }
 
-        .sign-row::after {
-            content: "";
-            display: table;
-            clear: both;
-        }
-
-        .sign-left {
-            float: left;
-            width: 50%;
-            font-size: 18px;
-            font-weight: 700;
-            line-height: 1.25;
-        }
-
-        .sign-right {
-            float: right;
-            width: 42%;
-            text-align: center;
-            font-size: 44px;
-            font-weight: 700;
-            line-height: 1.2;
-            margin-top: 22px;
-        }
-
-        .vc-remark-title {
-            margin-top: 56px;
-            margin-left: 6%;
-            font-size: 44px;
-            font-weight: 700;
-            line-height: 1.2;
-        }
-
-        .vc-remark-value {
-            margin-top: 14px;
-            margin-left: 6%;
-            font-size: 28px;
-            font-weight: 400;
+        .principal-remark-value {
+            margin-top: 6px;
             white-space: pre-wrap;
+            min-height: 24px;
         }
 
-        .principal-sign-wrap {
-            min-height: 240mm;
-            position: relative;
-        }
-
-        .principal-signature {
-            position: absolute;
-            right: 0;
-            bottom: 18mm;
+        .principal-signature-line {
+            margin-top: 18px;
             text-align: right;
-            font-size: 46px;
-            font-weight: 700;
+            font-weight: bold;
         }
     </style>
 </head>
@@ -478,47 +437,32 @@
             </tr>
             <tr>
                 <td class="center">2</td>
-                <td>Activities Score</td>
-                <td class="center"><b>{{ scores.activities_score }}</b></td>
-            </tr>
-            <tr>
-                <td class="center">3</td>
                 <td>Student Feedback Score</td>
                 <td class="center"><b>{{ scores.student_feedback_score }}</b></td>
             </tr>
             <tr>
-                <td class="center">4</td>
+                <td class="center">3</td>
                 <td>Departmental Activities Score</td>
                 <td class="center"><b>{{ scores.departmental_score }}</b></td>
             </tr>
             <tr>
-                <td class="center">5</td>
+                <td class="center">4</td>
                 <td>Institute Activities Score</td>
                 <td class="center"><b>{{ scores.institute_score }}</b></td>
+            </tr>
+            <tr>
+                <td class="center">5</td>
+                <td>ACR Score</td>
+                <td class="center"><b>{{ scores.acr_score }}</b></td>
             </tr>
             <tr>
                 <td class="center">6</td>
                 <td>Society Activities Score</td>
                 <td class="center"><b>{{ scores.society_score }}</b></td>
             </tr>
-            <tr>
-                <td class="center">7</td>
-                <td>Research Score</td>
-                <td class="center"><b>{{ scores.research_score }}</b></td>
-            </tr>
-            <tr>
-                <td class="center">8</td>
-                <td>PBAS Score</td>
-                <td class="center"><b>{{ scores.pbas_score }}</b></td>
-            </tr>
-            <tr>
-                <td class="center">9</td>
-                <td>ACR Score</td>
-                <td class="center"><b>{{ scores.acr_score }}</b></td>
-            </tr>
             <tr style="background-color: #e6f2ff;">
-                <td colspan="2" class="center"><b>TOTAL SCORE</b></td>
-                <td class="center"><b>{{ scores.total_score }}</b></td>
+                <td colspan="2" class="center"><b>TOTAL 360 SCORE</b></td>
+                <td class="center"><b>{{ scores.total_360_score }}</b></td>
             </tr>
         </tbody>
     </table>
@@ -539,31 +483,14 @@
         </tr>
     </table>
 
-    <div class="page-break"></div>
-
-    <div class="sign-row">
-        <div class="sign-left">
-            Signature of the Teacher<br>
-            Date:-
-        </div>
-        <div class="sign-right">
-            Signature<br>
-            (Head of the Department)
-        </div>
-    </div>
-
-    <div class="vc-remark-title">
+    <div class="principal-remark-title">
         Remark of the Vice-Chancellor/Principal (Adverse remarks as well as remarks of appreciation)
     </div>
-    <div class="vc-remark-value">
+    <div class="principal-remark-value">
         {{ remarks.principal|default:"-" }}
     </div>
 
-    <div class="page-break"></div>
-
-    <div class="principal-sign-wrap">
-        <div class="principal-signature">Principal</div>
-    </div>
+    <div class="principal-signature-line">Principal</div>
 
 </body>
 
