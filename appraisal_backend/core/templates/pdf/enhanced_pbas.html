@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="utf-8" />
-    <title>AICTE PBAS – Part A & B</title>
+    <title>AICTE PBAS - Part A</title>
 
     <style>
         @page {
@@ -68,6 +68,65 @@
 
         tr {
             page-break-inside: avoid;
+        }
+
+        .sign-row {
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        .sign-row::after {
+            content: "";
+            display: table;
+            clear: both;
+        }
+
+        .sign-left {
+            float: left;
+            width: 50%;
+            font-size: 18px;
+            font-weight: 700;
+            line-height: 1.25;
+        }
+
+        .sign-right {
+            float: right;
+            width: 42%;
+            text-align: center;
+            font-size: 44px;
+            font-weight: 700;
+            line-height: 1.2;
+            margin-top: 22px;
+        }
+
+        .vc-remark-title {
+            margin-top: 56px;
+            margin-left: 6%;
+            font-size: 44px;
+            font-weight: 700;
+            line-height: 1.2;
+        }
+
+        .vc-remark-value {
+            margin-top: 14px;
+            margin-left: 6%;
+            font-size: 28px;
+            font-weight: 400;
+            white-space: pre-wrap;
+        }
+
+        .principal-sign-wrap {
+            min-height: 240mm;
+            position: relative;
+        }
+
+        .principal-signature {
+            position: absolute;
+            right: 0;
+            bottom: 18mm;
+            text-align: right;
+            font-size: 46px;
+            font-weight: 700;
         }
     </style>
 </head>
@@ -482,61 +541,31 @@
 
     <div class="page-break"></div>
 
-    <!-- ================= PART B ================= -->
-    <h3>PART 'B'</h3>
+    <div class="sign-row">
+        <div class="sign-left">
+            Signature of the Teacher<br>
+            Date:-
+        </div>
+        <div class="sign-right">
+            Signature<br>
+            (Head of the Department)
+        </div>
+    </div>
 
-    <p class="small">
-        Assessment by the Principal / Head of Department
-    </p>
+    <div class="vc-remark-title">
+        Remark of the Vice-Chancellor/Principal (Adverse remarks as well as remarks of appreciation)
+    </div>
+    <div class="vc-remark-value">
+        {{ remarks.principal|default:"-" }}
+    </div>
 
-    <table>
-        <colgroup>
-            <col style="width:130mm">
-            <col style="width:50mm">
-        </colgroup>
-        <tr>
-            <th>Assessment Criteria</th>
-            <th>Verified Grade</th>
-        </tr>
+    <div class="page-break"></div>
 
-        <tr>
-            <td class="small">
-                Good in Teaching and Satisfactory/Good in Activities
-            </td>
-            <td class="center">
-                <b>{{ verified_grade|default:scores.overall_grade }}</b>
-            </td>
-        </tr>
-    </table>
-
-    <br>
-
-    <p><b>Justification (if not satisfactory):</b></p>
-    <p class="small">{{ remarks.justification|default:"-" }}</p>
-
-    <br>
-
-    <p><b>Comments of HOD:</b></p>
-    <p class="small">{{ remarks.hod_comments|default:"-" }}</p>
-
-    <br>
-
-    <p><b>Remarks of Principal:</b></p>
-    <p class="small">{{ remarks.principal|default:"-" }}</p>
-
-    <br><br>
-
-    <table style="border:none;">
-        <colgroup>
-            <col style="width:90mm">
-            <col style="width:90mm">
-        </colgroup>
-        <tr>
-            <td style="border:none;">Signature of HOD</td>
-            <td style="border:none;">Signature of Teacher</td>
-        </tr>
-    </table>
+    <div class="principal-sign-wrap">
+        <div class="principal-signature">Principal</div>
+    </div>
 
 </body>
 
 </html>
+
