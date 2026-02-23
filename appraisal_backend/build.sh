@@ -51,7 +51,8 @@ else:
         if user.role != 'ADMIN':
             user.role = 'ADMIN'
             updates.append('role')
-        if updates:
-            user.save(update_fields=updates)
-        print(f'Bootstrap admin already exists: {username}')
+        user.set_password(password)
+        updates.append('password')
+        user.save(update_fields=updates)
+        print(f'Bootstrap admin updated (including password): {username}')
 "
