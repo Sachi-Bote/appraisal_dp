@@ -42,10 +42,7 @@ SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "django-insecure-change-me")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = env_bool("DJANGO_DEBUG", True)
 
-ALLOWED_HOSTS = env_list(
-    "DJANGO_ALLOWED_HOSTS",
-    ["127.0.0.1", "localhost"] if DEBUG else [],
-)
+ALLOWED_HOSTS = ["*"]
 
 
 # Application definition
@@ -116,7 +113,7 @@ DATABASES = {
         'NAME': os.getenv("DB_NAME", "appraisal_db_dp"),
         'USER': os.getenv("DB_USER", "admin"),
         'PASSWORD': os.getenv("DB_PASSWORD", "admin123"),
-        'HOST': os.getenv("DB_HOST", "localhost"),
+        'HOST': os.getenv("DB_HOST", "db"),
         'PORT': os.getenv("DB_PORT", "5432"),
         'CONN_MAX_AGE': int(os.getenv("DB_CONN_MAX_AGE", "120")),
         'CONN_HEALTH_CHECKS': env_bool("DB_CONN_HEALTH_CHECKS", True),
@@ -161,8 +158,8 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
-STATIC_URL = 'static/'
-STATIC_ROOT = BASE_DIR / "staticfiles"
+STATIC_URL = "/static/"
+STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
@@ -208,9 +205,11 @@ AUTHENTICATION_BACKENDS = [
     "django.contrib.auth.backends.ModelBackend",
 ]
 
-CORS_ALLOWED_ORIGINS = [
-    *env_list("DJANGO_CORS_ALLOWED_ORIGINS", ["http://localhost:5173"]),
-]
+CORS_ALLOWED_ORIGINS = env_list(
+    "DJANGO_CORS_ALLOWED_ORIGINS",
+    ["http://localhost"]
+)
+CORS_ALLOWED_ALL_ORIGINS = True
 
 CSRF_TRUSTED_ORIGINS = env_list("DJANGO_CSRF_TRUSTED_ORIGINS", CORS_ALLOWED_ORIGINS)
 
@@ -238,7 +237,7 @@ else:
 EDGE_BROWSER_PATH = os.getenv("EDGE_BROWSER_PATH", "")
 PLAYWRIGHT_BROWSER_PATH = os.getenv("PLAYWRIGHT_BROWSER_PATH", "")
 
-FRONTEND_BASE_URL = os.getenv("FRONTEND_BASE_URL", "http://localhost:5173")
+FRONTEND_BASE_URL = os.getenv("FRONTEND_BASE_URL", "http://localhost")
 PASSWORD_RESET_EMAIL_FAIL_SILENTLY = env_bool("PASSWORD_RESET_EMAIL_FAIL_SILENTLY", DEBUG)
 
 EMAIL_BACKEND = os.getenv(
